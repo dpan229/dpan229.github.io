@@ -1,0 +1,91 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+}
+
+#header_placeholder {
+    /* 
+       same height as header so page doesn't jump 
+       when header loads
+    */
+    height: 36px;
+    margin-bottom: 10px;
+}
+
+#nav {
+    display: flex;
+    align-items: center;
+
+    height: 36px;
+    margin-bottom: 10px;
+    background-color: white;
+
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+}
+
+#home_nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+    text-decoration: none;
+    color: white;
+
+    width: fit-content;
+    height: 100%;
+    padding: 0 10px;
+    background-color: #cd8b62;
+
+    border-style: none solid none none;
+    border-color: black;
+    border-width: 5px;
+
+    transition: text-shadow 0.3s ease;
+}
+
+#home_nav:hover {
+    text-shadow: 
+        -1px 0 0 black,
+        1px 0 0 black,
+        0 -1px 0 black,
+        0 1px 0 black;
+}
+
+.nav_link {
+    color: black;
+    text-shadow: 0 0 0 black;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.nav_link:hover {
+    color: white;
+    text-shadow: 
+        -1px 0 0 black,
+        1px 0 0 black,
+        0 -1px 0 black,
+        0 1px 0 black;
+}
+
+.main_header {
+    display: block;
+    width: fit-content;
+    margin: 5px auto;
+    font-size: 30px;
+    font-weight: bold;
+
+    border-style: none solid;
+    border-color: black;
+    border-width: 5px;
+    padding: 0 5px;
+
+    background-color: #fbdd8a;
+    color: white;
+    text-shadow:
+        1px 0 0 black,
+        -1px 0 0 black,
+        0 1px 0 black,
+        0 -1px 0 black;
+}

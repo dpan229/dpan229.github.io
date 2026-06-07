@@ -1,0 +1,81 @@
+.header {
+    font-family: monospace;
+    font-size: 24px;
+    font-weight: bold;
+    display: block;
+    width: fit-content;
+    margin: 5px auto;
+}
+
+#canvas_container {
+    display: flex;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+canvas {
+    outline: 1px solid black;
+}
+
+.button_column {
+    width: 40px;
+    margin: 0 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.letter_button {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    margin: auto 0;
+    font-size: 20px;
+}
+
+.controls {
+    display: block;
+    width: fit-content;
+    margin: 5px auto 10px auto;
+    padding: 5px;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.25);
+}
+
+.control_container {
+    width: fit-content;
+    margin: 0 auto;
+}
+
+#control_buttons {
+    width: 100%;
+    display: flex;
+}
+
+.control_button {
+    width: 100%;
+    padding: 5px;
+    margin: 2px;
+}
+
+.explanation {
+    text-align: center;
+    margin: 5px;
+}
+
+#wordList {
+    height: 500px;
+    overflow-y: auto;
+    font-family: monospace;
+    margin: 8px;
+}
+
+.wordListUl {
+    column-count: 5;
+}
+
+.small_note {
+    display: block;
+    width: fit-content;
+    margin: 5px auto;
+    font-size: 12px;
+}

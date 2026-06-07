@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <title>Ants</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Ants</span>
+        <canvas id="antCanvas" width="800" height="800"></canvas>
+        <div class="button_container">
+            <div class="button_inner_container">
+                <button id="playpause">Pause</button>
+            </div>
+            <div class="button_inner_container">
+                <button id="reset_center">Reset (center)</button>
+                <button id="reset_scatter">Reset (scatter)</button>
+            </div>
+            <div class="button_inner_container">
+                <span id="fps">FPS</span>
+            </div>
+        </div>
+        <div id="controls">
+            <!-- <span class="heading">Settings</span> -->
+            <div class="control_container">
+                <input type="range" min="0" max="100" value="50" id="evaporation" class="slider">
+                <label for="evaporation">Evaporation multiplier: <span id="evaporation_text">0.9950</span></label>
+                <span class="explanation">All trails are multiplied by this factor at the end of every frame. If this is low, trails will evaporate quickly; if this is high, trails will evaporate slowly.</span>
+            </div>
+            <div class="control_container">
+                <input type="range" min="0" max="50" value="14" id="distance" class="slider">
+                <label for="angle">Ant sight distance: <span id="distance_text">5.00</span> pixels</label>
+                <span class="explanation">Every frame, ants sample 5 points at this distance in front of themselves to determine how much to turn. A larger value will allow ants to see trails from further away, but make them less able to see trails that are close by.</span>
+            </div>
+            <div class="control_container">
+                <input type="range" min="1" max="8" value="2" id="angle" class="slider">
+                <label for="angle">Ant sight angle: <span id="angle_text">23.50</span> degrees</label>
+                <span class="explanation">Angular spread of the points sampled by each ant to determine how much to turn. A larger value will allow ants to turn more sharply.</span>
+            </div>
+            <div class="control_container">
+                <input type="range" min="0" max="120" value="60" id="rand_weight" class="slider">
+                <label for="rand_weight">Random weight: <span id="rand_weight_text">0.60</span></label>
+                <span class="explanation">Weight given to random angle when ants decide how much to turn on each frame. If this is low, ants will always follow trails; if this is high, ants will deviate more from trails.</span>
+            </div>
+        </div>
+        <script src="../js/include_html.js"></script>
+        <script src="js/ants.js"></script>
+    </body>
+</html>

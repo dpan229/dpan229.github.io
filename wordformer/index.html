@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <title>Word former</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Word Former</span>
+        <div class="explanation">
+            Click the buttons or type letters on your keyboard to add them to the field. 
+            Words attract each other if they can combine to form a single longer word, and combine when they collide. 
+            Pairs that cannot form a valid word combine into unstable words, which decay over time.
+            Click and drag on the field to move words around.
+        </div>
+        <div id="canvas_container">
+            <div class="button_column" id="button_column_1">
+
+            </div>
+            <canvas id="mainCanvas" width="600" height="600"></canvas>
+            <div class="button_column" id="button_column_2">
+
+            </div>
+        </div>
+        <div class="controls">
+            <div class="control_container">
+                <input type="range" id="speed_slider" min="-20" max="20" value="0">
+                <label for="speed_slider">Simulation speed: <span id="speed_label">1.00x</span></label>
+                <br>
+                <input type="range" id="decay_slider" min="-30" max="0" value="-10">
+                <label for="decay_slider">Decay probability: <span id="decay_prob">10.00%</span></label>
+            </div>
+            <div class="control_container">
+                <input type="checkbox" id="show_connections">
+                <label for="show_connections">Show valid pairs</label>
+            </div>
+            <div id="control_buttons">
+                <button class="control_button" id="playPause">Pause</button>
+                <button class="control_button" id="reset">Reset</button>
+            </div>
+        </div>
+        <span class="header">Unique words formed: <span id="wordCount">0</span></span>
+        <div id="wordList"></div>
+        <span class="small_note">Word list source: <a href="https://github.com/dwyl/english-words">https://github.com/dwyl/english-words</a></span>
+
+        <script src="/js/include_html.js"></script>
+        <script src="js/words.js"></script>
+    </body>
+</html>
