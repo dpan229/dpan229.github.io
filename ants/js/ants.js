@@ -1,35 +1,5 @@
-const ant_canvas = document.getElementById("antCanvas");
-const ctx = ant_canvas.getContext("2d");
-
-let mouse_down = false;
-ant_canvas.addEventListener("mousedown", function (e) {
-    mouse_down = true;
-});
-ant_canvas.addEventListener("mouseup", function (e) {
-    mouse_down = false;
-});
-let last_mouse_x = 0;
-let last_mouse_y = 0;
-let mouse_x = 0;
-let mouse_y = 0;
-ant_canvas.addEventListener("mousemove", function (e) {
-    last_mouse_x = mouse_x;
-    last_mouse_y = mouse_y;
-    const canvas_bounds = ant_canvas.getBoundingClientRect();
-    mouse_x = Math.round(e.clientX - canvas_bounds.left);
-    mouse_y = Math.round(e.clientY - canvas_bounds.top);
-});
-
 function mod(x, m) {
     return x % m + (x < 0 ? m : 0);
-}
-
-function normal_random(mean=0, stdev=1) {
-    // Get normally distributed random value using Box-Muller transform
-    const u = 1 - Math.random();
-    const v = Math.random();
-    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    return z * stdev + mean;
 }
 
 class Ant {
@@ -41,13 +11,12 @@ class Ant {
 }
 
 class AntWorld {
-    constructor(width, height, ctx) {
+    constructor(width, height) {
         this.width = width;
         this.height = height;
-        this.ctx = ctx;
 
         this.trails = Array.from({length: height}, () => Array(width).fill(0.0));
-        this.imageData = ctx.createImageData(width, height);
+        this.imageData = new ImageData(width, height);
         this.ants = [];
         this.evaporation = 0.995;
         this.rand_weight = 0.6;
@@ -63,21 +32,9 @@ class AntWorld {
     }
 
     bound_coords(x, y) {
-        // return [
-        //     0 <= x && x < this.width ? x : this.width >> 1,
-        //     0 <= y && y < this.height ? y : this.height >> 1
-        // ];
         return [
             mod(x, this.width),
             mod(y, this.height)
-        ];
-        return [
-            mod(x, 2 * this.width) < this.width ? mod(x, this.width) : this.width - mod(x, this.width) - 1,
-            mod(y, 2 * this.height) < this.height ? mod(y, this.height) : this.height - mod(y, this.height) - 1
-        ]
-        return [
-            this.width - Math.abs(mod(x, 2 * this.width) - this.width),
-            this.height - Math.abs(mod(y, 2 * this.height) - this.height)
         ];
     }
 
@@ -157,9 +114,6 @@ class AntWorld {
         for (let ant of this.ants) {
             // add trail
             this.add_trail(ant.x, ant.y);
-            // const r = normal_random(0, 2);
-            // const t = Math.random() * Math.PI;
-            // this.add_trail(ant.x + r * Math.cos(t), ant.y + r * Math.sin(t));
 
             // move ant
             ant.x += Math.cos(ant.a);
@@ -175,7 +129,7 @@ class AntWorld {
         }
     }
 
-    draw() {
+    draw(ctx) {
         const data = this.imageData.data;
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -186,7 +140,7 @@ class AntWorld {
                 // set green
                 data[i + 1] = 0;
                 // set blue
-                data[i + 2] = 0;//trail == 0 ? 0 : Math.max(0, Math.floor(5 * Math.log(trail) + 255));
+                data[i + 2] = 0;
                 data[i + 3] = 255;
             }
         }
@@ -200,8 +154,42 @@ class AntWorld {
     }
 }
 
+const ant_canvas = document.getElementById("antCanvas");
+const ant_ctx = ant_canvas.getContext("2d");
+const tool_canvas = document.getElementById("toolCanvas");
+const tool_ctx = tool_canvas.getContext("2d");
+
+let mouse_down = false;
+tool_canvas.addEventListener("mousedown", function (e) {
+    mouse_down = true;
+});
+tool_canvas.addEventListener("mouseup", function (e) {
+    mouse_down = false;
+});
+let last_mouse_x = -100;
+let last_mouse_y = -100;
+let mouse_x = -100;
+let mouse_y = -100;
+tool_canvas.addEventListener("mousemove", function (e) {
+    last_mouse_x = mouse_x;
+    last_mouse_y = mouse_y;
+    const canvas_bounds = tool_canvas.getBoundingClientRect();
+    mouse_x = Math.round(e.clientX - canvas_bounds.left);
+    mouse_y = Math.round(e.clientY - canvas_bounds.top);
+    tool_ctx.clearRect(0, 0, 800, 800);
+    active_tool.draw_func(tool_ctx, mouse_x, mouse_y, last_mouse_x, last_mouse_y);
+});
+tool_canvas.addEventListener("mouseleave", function (e) {
+    mouse_down = false;
+    mouse_x = -100;
+    mouse_y = -100;
+    last_mouse_x = -100;
+    last_mouse_y = -100;
+    tool_ctx.clearRect(0, 0, 800, 800);
+});
+
 // create world object
-const world = new AntWorld(800, 800, ctx);
+const world = new AntWorld(800, 800);
 for (i = 0; i < 4000; i++) {
     world.add_ant(400, 400, Math.random() * 2 * Math.PI);
 }
@@ -264,18 +252,18 @@ play_pause.addEventListener("click", function (e) {
 
 // set up reset buttons
 const center_button = document.getElementById("reset_center");
-center_button.addEventListener("click", function(e) {
+center_button.addEventListener("click", function (e) {
     world.clear_all_trails();
     world.remove_all_ants();
     for (i = 0; i < 4000; i++) {
         world.add_ant(400, 400, Math.random() * 2 * Math.PI);
     }
     if (!playing) {
-        world.draw();
+        world.draw(ant_ctx);
     }
 });
 const scatter_button = document.getElementById("reset_scatter");
-scatter_button.addEventListener("click", function(e) {
+scatter_button.addEventListener("click", function (e) {
     world.clear_all_trails();
     world.remove_all_ants();
     for (i = 0; i < 4000; i++) {
@@ -286,24 +274,21 @@ scatter_button.addEventListener("click", function(e) {
         );
     }
     if (!playing) {
-        world.draw();
+        world.draw(ant_ctx);
     }
 });
 
-const fps_div = document.getElementById("fps");
-const last_frame_times = [];
-function animate() {
-    if (last_frame_times.length < 10) {
-        last_frame_times.push(performance.now());
-    } else {
-        for (i = 0; i < 9; i++) {
-            last_frame_times[i] = last_frame_times[i + 1];
-        }
-        last_frame_times[9] = performance.now();
-        const fps = 10000 / (last_frame_times[9] - last_frame_times[0]);
-        fps_div.innerHTML = `FPS: ${fps.toFixed(1)}`;
+// set up tools
+class Tool {
+    constructor(apply_func, draw_func) {
+        this.apply_func = apply_func;
+        this.draw_func = draw_func;
     }
-    if (mouse_down) {
+}
+
+const add_trail_tool = new Tool(
+    // apply function
+    function (world, mouse_x, mouse_y, last_mouse_x, last_mouse_y) {
         // place trails 100 times in a line from last mouse position to current
         // mouse position, offsetting each trail randomly by a small amount
         for (let i = 0; i < 100; i++) {
@@ -314,12 +299,73 @@ function animate() {
                 last_mouse_y + i / 99 * (mouse_y - last_mouse_y) + r * Math.sin(t)
             );
         }
+    },
+    // draw function
+    function (ctx, mouse_x, mouse_y, last_mouse_x, last_mouse_y) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mouse_x, mouse_y, 1.5, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+);
+
+const remove_trail_tool = new Tool(
+    function (world, mouse_x, mouse_y, last_mouse_x, last_mouse_y) {
+        for (let dy = -5; dy <= 5; dy++) {
+            for (let dx = -5; dx <= 5; dx++) {
+                world.set_trail_int(mouse_x + dx, mouse_y + dy, 0.0);
+            }
+        }
+    },
+    function (ctx, mouse_x, mouse_y, last_mouse_x, last_mouse_y) {
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(mouse_x - 5, mouse_y - 5, 10, 10);
+    }
+);
+
+let active_tool = add_trail_tool;
+document.querySelectorAll('input[name="tool"]').forEach((elem) => {
+    elem.addEventListener("change", function (e) {
+        switch (e.target.value) {
+            case "add_trail":
+                active_tool = add_trail_tool;
+                break;
+            case "remove_trail":
+                active_tool = remove_trail_tool;
+                break;
+            default:
+                break;
+        }
+    });
+})
+
+const fps_div = document.getElementById("fps");
+const last_frame_times = [];
+function animate() {
+    // update FPS
+    if (last_frame_times.length < 10) {
+        last_frame_times.push(performance.now());
+    } else {
+        for (i = 0; i < 9; i++) {
+            last_frame_times[i] = last_frame_times[i + 1];
+        }
+        last_frame_times[9] = performance.now();
+        const fps = 10000 / (last_frame_times[9] - last_frame_times[0]);
+        fps_div.innerHTML = `FPS: ${fps.toFixed(1)}`;
+    }
+
+    // apply tool if mouse is down on canvas
+    if (mouse_down) {
+        active_tool.apply_func(world, mouse_x, mouse_y, last_mouse_x, last_mouse_y);
         if (!playing) {
-            world.draw();
+            world.draw(ant_ctx);
         }
     }
+
     if (playing) {
-        world.draw();
+        world.draw(ant_ctx);
         world.update();
     }
 

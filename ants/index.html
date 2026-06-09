@@ -7,7 +7,21 @@
     <body>
         <div id="header_placeholder"></div>
         <span class="main_header">Ants</span>
-        <canvas id="antCanvas" width="800" height="800"></canvas>
+        <div class="canvas_container">
+            <canvas id="antCanvas" class="layer_canvas" width="800" height="800"></canvas>
+            <canvas id="toolCanvas" class="layer_canvas" width="800" height="800"></canvas>
+        </div>
+        <div class="tool_container">
+            <span>Tools:</span>
+            <div class="tool">
+                <input type="radio" id="add_trail_tool" name="tool" value="add_trail" checked>
+                <label for="add_trail_tool">Add trail</label>
+            </div>
+            <div class="tool">
+                <input type="radio" id="remove_trail_tool" name="tool" value="remove_trail">
+                <label for="remove_trail_tool">Remove trail</label>
+            </div>
+        </div>
         <div class="button_container">
             <div class="button_inner_container">
                 <button id="playpause">Pause</button>
