@@ -72,6 +72,7 @@ function rgb_to_hsv(rgb) {
 
 class ImageSorter {
     constructor() {
+        // set image to a 500 x 500 completely random image
         this.image_data = new ImageData(500, 500);
         this.width = 500;
         this.height = 500;
@@ -150,6 +151,10 @@ class ImageSorter {
         return this.original_y[y][x];
     }
 
+    /**
+     * Sets the original position of each pixel to its current
+     * position.
+     */
     reset_original_positions() {
         this.original_x = [];
         this.original_y = [];
@@ -165,6 +170,10 @@ class ImageSorter {
         }
     }
 
+    /**
+     * Change image to the given image data.
+     * @param {ImageData} image_data
+     */
     set_image_data(image_data) {
         this.image_data = image_data;
         this.width = image_data.width;
@@ -194,6 +203,14 @@ class ImageSorter {
         this.possible_swaps = get_possible_swaps(max_d);
     }
 
+    /**
+     * Returns a reduced equivalent of the coordinates (`x`, `y`) which is
+     * within the bounds of the image. Value depends on whether wrapping is
+     * set for the x and y axes.
+     * @param {number} x 
+     * @param {number} y 
+     * @returns {Array<number>} Reduced coordinates [x, y]
+     */
     bound_coords(x, y) {
         return [
             this.wrap_x ? mod(x, this.width) : Math.max(0, Math.min(this.width - 1, x)),
@@ -201,6 +218,13 @@ class ImageSorter {
         ];
     }
 
+    /**
+     * Returns the color of the pixel at (`x`, `y`) as an object
+     * with `r`, `g` and `b` attributes.
+     * @param {number} x 
+     * @param {number} y 
+     * @returns {object} The color of the pixel
+     */
     get_pixel(x, y) {
         [x, y] = this.bound_coords(x, y);
         const data = this.image_data.data;
@@ -212,6 +236,13 @@ class ImageSorter {
         };
     }
 
+    /**
+     * Swaps the pixels at (`x1`, `y1`) and (`x2`, `y2`).
+     * @param {number} x1 
+     * @param {number} y1 
+     * @param {number} x2 
+     * @param {number} y2 
+     */
     swap_pixels(x1, y1, x2, y2) {
         [x1, y1] = this.bound_coords(x1, y1);
         [x2, y2] = this.bound_coords(x2, y2);
@@ -241,6 +272,9 @@ class ImageSorter {
         ];
     }
 
+    /**
+     * Shuffles all pixels randomly.
+     */
     shuffle() {
         for (let i = this.width * this.height - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -254,6 +288,42 @@ class ImageSorter {
         this.reset_loss();
     }
 
+    /**
+     * Moves all pixels back to their original positions.
+     */
+    reset() {
+        let y = 0;
+        let x = 0;
+        while (y < this.height) {
+            const orig_x = this.original_x[y][x];
+            const orig_y = this.original_y[y][x];
+            // if pixel at x, y is already in original position,
+            // go to next pixel, otherwise swap it to its original
+            // position and don't change x and y
+            if (orig_x == x && orig_y == y) {
+                if (x < this.width - 1) {
+                    x++;
+                } else {
+                    x = 0;
+                    y++;
+                }
+            } else {
+                this.swap_pixels(x, y, orig_x, orig_y);
+            }
+        }
+        this.frame = 0;
+        this.reset_loss();
+    }
+
+    /**
+     * Returns the loss of an individual pixel at (`x`, `y`) if its
+     * target position is at (`target_x`, `target_y`).
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} target_x 
+     * @param {number} target_y 
+     * @returns {number} The pixel's loss
+     */
     get_loss(x, y, target_x, target_y) {
         // each pixel's loss is square of distance to target
         const dx = this.wrap_x ? Math.min(
@@ -269,6 +339,10 @@ class ImageSorter {
         return dx*dx + dy*dy;
     }
 
+    /**
+     * Recalculates the total loss and sets the initial loss to
+     * the current value.
+     */
     reset_loss() {
         this.loss = 0;
         for (let y = 0; y < this.height; y++) {
@@ -281,6 +355,15 @@ class ImageSorter {
         this.initial_loss = this.loss;
     }
 
+    /**
+     * Returns how much the total loss would change if the pixels at
+     * (`x1`, `y1`) and (`x2`, `y2`) swapped.
+     * @param {number} x1 
+     * @param {number} y1 
+     * @param {number} x2 
+     * @param {number} y2 
+     * @returns {number} Loss difference
+     */
     swap_delta(x1, y1, x2, y2) {
         [x1, y1] = this.bound_coords(x1, y1);
         [x2, y2] = this.bound_coords(x2, y2);
@@ -355,6 +438,12 @@ play_button.addEventListener("click", function (e) {
     } else {
         play_button.innerHTML = "Play";
     }
+});
+
+// set up reset button
+const reset_button = document.getElementById("reset");
+reset_button.addEventListener("click", function (e) {
+    sorter.reset();
 });
 
 // set up shuffle button
