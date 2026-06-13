@@ -29,3 +29,7 @@ The app allows you to place trails by clicking in the field and has controls for
 This is an interactive app for exploring the [Van Eck Sequence](https://oeis.org/A181391). The sequence begins with 0, then continues as follows: each number in the sequence is equal to the distance between the previous number in the sequence and the last occurance of that number, or 0 if this is the first time that number has appeared. Thus, the second number is 0 (the first element was the first occurance of 0), the third number is 1 (the last time 0 appeared was 1 step earlier), the fourth number is 0 (that was the first appearance of 1), the fifth number is 2 (the last time 0 appeared was 2 steps earlier), and so on.
 
 Use the scroll wheel to zoom in and out. Click and drag to move the view horizontally. Elements of the sequence are generated automatically to fill the view. Mouse over an element to see the two elements its value is referencing, and click on it to zoom them both into view.
+
+## [Image Sorter](https://dpan229.github.io/imagesorter/)
+
+This is an app that attempts to sort the pixels of an image in 2D. Each pixel is given a target position based on its color or original position, and every frame a subset of the pixels choose a random neighbor and swap with that neighbor if doing so would reduce the total loss, the sum of the square of each pixel's distance from its target position. The X and Y components of the target calculation can be set independently, allowing many possible combinations.
