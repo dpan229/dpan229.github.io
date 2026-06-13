@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Image Sorter</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Image Sorter</span>
+        <div class="canvas_container" id="main_canvas_container">
+            <canvas class="layer_canvas" id="image_canvas"></canvas>
+            <canvas class="layer_canvas" id="interact_canvas"></canvas>
+            <div id="arrow_bottom">— <span id="bottom_text">Red</span><span id="bottom_wrap"></span> →</div>
+            <div id="arrow_left">— <span id="left_text">Green</span><span id="left_wrap"></span> →</div>
+        </div>
+        <div class="control_container">
+            <div class="control_group">
+                <button id="playpause">Play</button>
+                <button id="shuffle">Shuffle</button>
+            </div>
+        </div>
+        <div class="info_container">
+            <span id="frame_count"></span>
+            <br>
+            <span id="loss"></span>
+            <br>
+            Loss is the sum of the square of each <br>
+            pixel's distance from its target position.
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Settings</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="1" max="50" value="3" id="swap_distance">
+                    <br>
+                    <label for="swap_distance">Max swap distance: <span id="swap_distance_text">3 pixels</span></label>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <span class="container_subheading">X Target</span>
+                    <table>
+                        <tr>
+                            <td class="target_radio">
+                                <input type="radio" id="x_red" name="x_target" value="red" checked>
+                                <label for="x_red">Red</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="x_green" name="x_target" value="green">
+                                <label for="x_green">Green</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="x_blue" name="x_target" value="blue">
+                                <label for="x_blue">Blue</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="target_radio">
+                                <input type="radio" id="x_hue" name="x_target" value="hue">
+                                <label for="x_hue">Hue</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="x_saturation" name="x_target" value="saturation">
+                                <label for="x_saturation">Saturation</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="x_value" name="x_target" value="value">
+                                <label for="x_value">Value</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="target_radio">
+                                <input type="radio" id="x_original" name="x_target" value="original">
+                                <label for="x_original">Original X</label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="control">
+                    <span class="container_subheading">Y Target</span>
+                    <table>
+                        <tr>
+                            <td class="target_radio">
+                                <input type="radio" id="y_red" name="y_target" value="red">
+                                <label for="y_red">Red</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="y_green" name="y_target" value="green" checked>
+                                <label for="y_green">Green</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="y_blue" name="y_target" value="blue">
+                                <label for="y_blue">Blue</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="target_radio">
+                                <input type="radio" id="y_hue" name="y_target" value="hue">
+                                <label for="y_hue">Hue</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="y_saturation" name="y_target" value="saturation">
+                                <label for="y_saturation">Saturation</label>
+                            </td>
+                            <td class="target_radio">
+                                <input type="radio" id="y_value" name="y_target" value="value">
+                                <label for="y_value">Value</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="target_radio">
+                                <input type="radio" id="y_original" name="y_target" value="original">
+                                <label for="y_original">Original Y</label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <input type="checkbox" id="wrap_x">
+                    <label for="wrap_x">Wrap X</label>
+                </div>
+                <div class="control">
+                    <input type="checkbox" id="wrap_y">
+                    <label for="wrap_y">Wrap Y</label>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Select image</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="10" max="250" value="250" id="pixel_count">
+                    <br>
+                    <label for="pixel_count">Resize image to <span id="pixel_count_text">250000</span> pixels</label>
+                </div>
+            </div>
+            <span class="container_subheading">Example images</span>
+            <div class="control_group">
+                <button class="example_image_button" data-path="images/oranges.jpg">Oranges</button>
+                <button class="example_image_button" data-path="images/jaggies.png">Jaggies</button>
+                <button class="example_image_button" data-path="images/example_2.png">Paint 1</button>
+                <button class="example_image_button" data-path="images/example.png">Paint 2</button>
+            </div>
+            <span class="container_subheading">Input image</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="file" id="image_input" accept="image/*">
+                </div>
+            </div>
+        </div>
+        <div class="info_container">
+            Every frame, a subset of the image's pixels choose <br>
+            a random neighbor within the max swap distance to swap with, <br>
+            and only perform the swap if doing so would lower the total loss. <br>
+            Hover over the image to see where the pixels' target positions are.
+        </div>
+        <div class="info_container">
+            Jaggies image source: <a href="https://commons.wikimedia.org/wiki/File:Test_nn.png">https://commons.wikimedia.org/wiki/File:Test_nn.png</a>
+        </div>
+        <script src="../js/include_html.js"></script>
+        <script src="js/imagesorter.js"></script>
+    </body>
+</html>

@@ -1,0 +1,89 @@
+.canvas_container {
+    width: 500px;
+    height: 500px;
+    border: 1px solid black;
+    position: relative;
+    display: block;
+    margin: 5px auto 25px auto;
+}
+
+.layer_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#arrow_bottom {
+    position: absolute;
+    top: 500px;
+    left: 0;
+    width: 500px;
+    height: 20px;
+    text-align: center;
+}
+
+#arrow_left {
+    position: absolute;
+    top: 0;
+    left: -20px;
+    width: 20px;
+    height: 500px;
+
+    writing-mode: sideways-lr;
+    text-orientation: sideways;
+    text-align: center;
+}
+
+.info_container {
+    width: fit-content;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.25);
+    margin: 5px auto;
+    font-family: monospace;
+    text-align: center;
+    padding: 0 5px 5px 5px;
+}
+
+.control_container {
+    width: 500px;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.25);
+    margin: 5px auto;
+    padding: 0 5px 5px 5px;
+}
+
+button {
+    width: 60px;
+    height: 30px;
+    margin: 0 5px;
+    padding: 0;
+}
+
+.container_heading {
+    font-weight: bold;
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.container_subheading {
+    display: block;
+    width: fit-content;
+    margin: 5px auto 0 auto;
+}
+
+table {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.control_group {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.control {
+    display: inline;
+    margin: 0 8px;
+    text-align: center;
+}
