@@ -226,6 +226,8 @@ class WordWorld {
         this.words = [];
         this.decay_chance = 0.1;
         this.show_connections = false;
+
+        this.dragged_obj = null;
     }
 
     add_word(word, stable=true, x=null, y=null, color=null) {
@@ -265,28 +267,36 @@ class WordWorld {
     }
 
     delete_object(i) {
-        this.words = this.words.slice(0, i).concat(this.words.slice(i + 1));
+        if (this.words[i] === this.dragged_obj) {
+            this.dragged_obj = null;
+        }
+        this.words.splice(i, 1);
     }
 
     reset() {
+        this.dragged_obj = null;
         this.words = [];
     }
 
     physics(step) {
-        // if mouse down, move closest object towards mouse
+        // if mouse down, move dragged object towards mouse
         if (mouse_down && this.words.length) {
-            let closest = 0;
-            let closest_distance = Infinity;
-            for (let i = 0; i < this.words.length; i++) {
-                const d2 = (mouse_x - this.words[i].x)**2 + (mouse_y - this.words[i].y)**2
-                if (d2 < closest_distance) {
-                    closest_distance = d2;
-                    closest = i;
+            if (this.dragged_obj === null) {
+                let closest = 0;
+                let closest_distance = Infinity;
+                for (let i = 0; i < this.words.length; i++) {
+                    const d2 = (mouse_x - this.words[i].x)**2 + (mouse_y - this.words[i].y)**2
+                    if (d2 < closest_distance) {
+                        closest_distance = d2;
+                        closest = i;
+                    }
                 }
+                this.dragged_obj = this.words[closest];
             }
-            const closest_obj = this.words[closest];
-            closest_obj.vx = 0.2 * (mouse_x - closest_obj.x);
-            closest_obj.vy = 0.2 * (mouse_y - closest_obj.y);
+            this.dragged_obj.vx = 0.2 * (mouse_x - this.dragged_obj.x);
+            this.dragged_obj.vy = 0.2 * (mouse_y - this.dragged_obj.y);
+        } else {
+            this.dragged_obj = null;
         }
 
         // decompose unstable objects
@@ -299,10 +309,10 @@ class WordWorld {
                     // either split off 1 letter or split in half
                     // 50% for each
                     if (Math.random() < 0.5) {
+                        // split off 1 letter
                         const ci = Math.floor(Math.random() * word.length);
                         const c = word[ci];
                         const left = word.slice(0, ci) + word.slice(ci + 1);
-                        // console.log(`Splitting ${c} ${left}`);
                         const left_word = this.word_set.random_anagram(left);
                         if (left_word !== null) {
                             to_decay.push([i, left_word, c, true, true]);
@@ -310,6 +320,7 @@ class WordWorld {
                             to_decay.push([i, left, c, false, true]);
                         }
                     } else {
+                        // split in half
                         const chars1 = [];
                         const chars2 = [];
                         for (let c of word) {
@@ -320,7 +331,6 @@ class WordWorld {
                             }
                         }
                         if (chars1.length > 0 && chars2.length > 0) {
-                            // console.log(`Attempting split ${chars1} ${chars2}`);
                             const word1 = this.word_set.random_anagram(chars1.join(""));
                             const word2 = this.word_set.random_anagram(chars2.join(""));
                             const stable1 = word1 !== null;
@@ -334,18 +344,22 @@ class WordWorld {
             }
         }
         for (let k = to_decay.length - 1; k >= 0; k--) {
+            // get info about decay
             const i = to_decay[k][0];
             const word1 = to_decay[k][1];
             const word2 = to_decay[k][2];
             const stable1 = to_decay[k][3];
             const stable2 = to_decay[k][4];
 
+            // get required info then delete object
             const x0 = this.words[i].x;
             const y0 = this.words[i].y;
             const vx0 = this.words[i].vx;
             const vy0 = this.words[i].vy;
+            const selected_decaying = this.words[i] === this.dragged_obj;
             this.delete_object(i);
 
+            // make new objects
             const obj1 = this.add_word(word1, stable1);
             const obj2 = this.add_word(word2, stable2);
             const d1 = (obj1.radius + obj2.radius) * obj2.mass / (obj1.mass + obj2.mass) + 1;
@@ -359,6 +373,14 @@ class WordWorld {
             obj1.vy = vy0 + 5 * Math.sin(angle) / obj1.mass;
             obj2.vx = vx0 - 5 * Math.cos(angle) / obj2.mass;
             obj2.vy = vy0 - 5 * Math.sin(angle) / obj2.mass;
+            // if dragged object is decaying, start dragging largest daughter
+            if (selected_decaying) {
+                if (obj1.word.length >= obj2.word.length) {
+                    this.dragged_obj = obj1;
+                } else {
+                    this.dragged_obj = obj2;
+                }
+            }
         }
 
         // for each pair of objects
@@ -416,10 +438,16 @@ class WordWorld {
                     false
                 ));
             }
+            
+            // if dragged object is colliding, start dragging new object
+            if (obj1 === this.dragged_obj || obj2 === this.dragged_obj) {
+                this.dragged_obj = this.words.at(-1);
+            }
+
             // delete colliding words
-            this.words.splice(j, 1);
-            this.words.splice(i, 1);
-            // fix indices for other to_combines
+            this.delete_object(j);
+            this.delete_object(i);
+            // fix indices for other collisions this frame
             for (let k2 = k + 1; k2 < to_combine.length;) {
                 const i2 = to_combine[k2][0];
                 const j2 = to_combine[k2][1];
