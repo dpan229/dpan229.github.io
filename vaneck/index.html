@@ -9,6 +9,15 @@
         <span class="main_header">Van Eck Sequence Explorer</span>
         <canvas id="vaneckCanvas" width="1000" height="500"></canvas>
         <canvas id="barCanvas" width="1000" height="10"></canvas>
+        <div class="control_container">
+            <span class="container_heading">Change Seed</span>
+            <span class="info">Current seed: <span id="current_seed">0</span></span>
+            <span class="info">Input seed as a comma-separated list</span>
+            <div class="control_group">
+                <input type="text" id="seed_input">
+                <button id="seed_button">Set seed</button>
+            </div>
+        </div>
         <script src="/js/include_html.js"></script>
         <script src="js/vaneck.js"></script>
     </body>

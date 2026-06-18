@@ -17,7 +17,7 @@ function color_string(color) {
 }
 
 class VanEckApp {
-    constructor(width, height, init=null) {
+    constructor(width, height, seed=null) {
         this.width = width;
         this.height = height;
         this.i0 = 0;
@@ -27,16 +27,30 @@ class VanEckApp {
         this.target_i0 = 0;
         this.target_scale = 20;
         
-        if (init === null) {
+        if (seed === null) {
             this.seq = [0];
+            this.seed_length = 1;
         } else {
-            this.seq = init;
+            this.seq = [...seed];
+            this.seed_length = seed.length;
         }
         this.colors = new Map();
         this.selected = null;
 
         this.bar_highlight = [];
 
+        this.update();
+    }
+
+    reset_seq(seed=null) {
+        this.deselect();
+        if (seed === null) {
+            this.seq = [0];
+            this.seed_length = 1;
+        } else {
+            this.seq = [...seed];
+            this.seed_length = seed.length;
+        }
         this.update();
     }
 
@@ -81,7 +95,7 @@ class VanEckApp {
 
     select(i) {
         this.selected = i;
-        if (i > 0) {
+        if (i >= this.seed_length) {
             const n = this.seq[i - 1];
             this.bar_highlight = [];
             for (let j = 0; j < this.seq.length; j++) {
@@ -89,6 +103,8 @@ class VanEckApp {
                     this.bar_highlight.push(j);
                 }
             }
+        } else {
+            this.bar_highlight = [];
         }
     }
 
@@ -165,6 +181,7 @@ class VanEckApp {
             ctx.fillText(s, x0 + this.scale / 2, y0 + this.scale / 2);
         }
 
+        // draw bottom bar
         const start_frac = this.i0 / (this.seq.length + 1);
         const end_frac = rightEdgeI / (this.seq.length + 1);
         bar_ctx.fillStyle = "#c5c5c5";
@@ -172,6 +189,7 @@ class VanEckApp {
         bar_ctx.fillStyle = "#4d8eff";
         bar_ctx.fillRect(start_frac * this.width, 0, (end_frac - start_frac) * this.width, 10);
 
+        // draw bottom bar text
         bar_ctx.fillStyle = "#000000";
         bar_ctx.font = "10px monospace";
         bar_ctx.textBaseline = "middle";
@@ -182,36 +200,40 @@ class VanEckApp {
 
         if (this.selected !== null) {
             const n = this.seq[this.selected];
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = "red";
-            if (n == 0) {
-                // draw selected circle when n = 0
-                const x = this.get_screen_x(this.selected - 0.5);
-                ctx.strokeStyle = "red";
-                ctx.beginPath();
-                ctx.arc(x, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
-                ctx.stroke();
-            } else {
-                // draw selected arc
-                const i2 = this.selected - 1;
-                const i1 = this.selected - 1 - n;
+            if (this.selected >= this.seed_length) {
+                // enable red glow
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = "red";
+                if (n == 0) {
+                    // draw selected circle when n = 0
+                    const x = this.get_screen_x(this.selected - 0.5);
+                    ctx.strokeStyle = "red";
+                    ctx.beginPath();
+                    ctx.arc(x, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
+                    ctx.stroke();
+                } else {
+                    // draw selected arc
+                    const i2 = this.selected - 1;
+                    const i1 = this.selected - 1 - n;
 
-                const x1 = this.get_screen_x(i1 + 0.5);
-                const x2 = this.get_screen_x(i2 + 0.5);
+                    const x1 = this.get_screen_x(i1 + 0.5);
+                    const x2 = this.get_screen_x(i2 + 0.5);
 
-                ctx.strokeStyle = "red";
-                ctx.beginPath();
-                ctx.arc((x1 + x2) / 2, this.height - this.scale, (x2 - x1) / 2, -Math.PI, 0);
-                ctx.stroke();
+                    ctx.strokeStyle = "red";
+                    ctx.beginPath();
+                    ctx.arc((x1 + x2) / 2, this.height - this.scale, (x2 - x1) / 2, -Math.PI, 0);
+                    ctx.stroke();
 
-                ctx.beginPath();
-                ctx.arc(x1, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
-                ctx.stroke()
-                ctx.beginPath();
-                ctx.arc(x2, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
-                ctx.stroke()                
+                    ctx.beginPath();
+                    ctx.arc(x1, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
+                    ctx.stroke()
+                    ctx.beginPath();
+                    ctx.arc(x2, this.height - this.scale / 2, this.scale / 2, 0, 2 * Math.PI);
+                    ctx.stroke()                
+                }
+                // disable glow
+                ctx.shadowColor = "rgba(0, 0, 0, 0)";
             }
-            ctx.shadowColor = "rgba(0, 0, 0, 0)";
 
             // draw box around selected
             ctx.strokeStyle = "green";
@@ -224,13 +246,17 @@ class VanEckApp {
                 bar_ctx.fillRect(this.width * i / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
             }
             bar_ctx.globalAlpha = 1;
-            bar_ctx.fillRect(this.width * (this.selected - 1 - n) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
-            bar_ctx.fillRect(this.width * (this.selected - 1) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
-            bar_ctx.strokeStyle = "red";
-            bar_ctx.beginPath();
-            bar_ctx.moveTo(this.width * (this.selected - n) / (this.seq.length + 1), 5);
-            bar_ctx.lineTo(this.width * (this.selected - 1) / (this.seq.length + 1), 5);
-            bar_ctx.stroke();
+            // draw connection in bar
+            if (this.selected >= this.seed_length) {
+                bar_ctx.fillRect(this.width * (this.selected - 1 - n) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
+                bar_ctx.fillRect(this.width * (this.selected - 1) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
+                bar_ctx.strokeStyle = "red";
+                bar_ctx.beginPath();
+                bar_ctx.moveTo(this.width * (this.selected - n) / (this.seq.length + 1), 5);
+                bar_ctx.lineTo(this.width * (this.selected - 1) / (this.seq.length + 1), 5);
+                bar_ctx.stroke();
+            }
+            // draw selected position in bar
             bar_ctx.fillStyle = "green";
             bar_ctx.fillRect(this.width * this.selected / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
         }
@@ -245,6 +271,7 @@ class VanEckApp {
 
 const app = new VanEckApp(1000, 500);
 
+// set up mouse controls
 let mouse_down = false;
 let dragging = false;
 canvas.addEventListener("mousedown", function (e) {
@@ -286,6 +313,7 @@ canvas.addEventListener("mousemove", function (e) {
     }
 });
 
+// set up mouse wheel zooming
 canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
     const old_scale = app.target_scale;
@@ -295,6 +323,7 @@ canvas.addEventListener("wheel", function (e) {
     app.slide_i0(app.i0 + 3 * e.deltaX / app.scale);
 });
 
+// set up responsive canvas sizing
 let canvas_width = 0;
 let canvas_height = 0
 function set_canvas_size() {
@@ -309,6 +338,27 @@ function set_canvas_size() {
 
 window.addEventListener("resize", set_canvas_size, false);
 set_canvas_size();
+
+// set up seed controls
+const seed_input = document.getElementById("seed_input");
+const seed_button = document.getElementById("seed_button");
+const seed_text = document.getElementById("current_seed");
+seed_button.addEventListener("click", function (e) {
+    const seed_string = seed_input.value;
+    const seed = [];
+    for (piece of seed_string.split(",")) {
+        const n = parseInt(piece);
+        if (!isNaN(n) && n >= 0) {
+            seed.push(n);
+        }
+    }
+    if (seed.length == 0) {
+        seed.push(0);
+    }
+
+    seed_text.innerHTML = seed.join(", ");
+    app.reset_seq(seed);
+});
 
 function animate() {
     ctx.clearRect(0, 0, canvas_width, canvas_height);
