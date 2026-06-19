@@ -189,15 +189,6 @@ class VanEckApp {
         bar_ctx.fillStyle = "#4d8eff";
         bar_ctx.fillRect(start_frac * this.width, 0, (end_frac - start_frac) * this.width, 10);
 
-        // draw bottom bar text
-        bar_ctx.fillStyle = "#000000";
-        bar_ctx.font = "10px monospace";
-        bar_ctx.textBaseline = "middle";
-        bar_ctx.textAlign = "right";
-        bar_ctx.fillText((this.i0 + 1).toFixed(0), start_frac * this.width, 5);
-        bar_ctx.textAlign = "left";
-        bar_ctx.fillText((rightEdgeI + 1).toFixed(0), end_frac * this.width, 5);
-
         if (this.selected !== null) {
             const n = this.seq[this.selected];
             if (this.selected >= this.seed_length) {
@@ -261,6 +252,15 @@ class VanEckApp {
             bar_ctx.fillRect(this.width * this.selected / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
         }
 
+        // draw bottom bar text
+        bar_ctx.fillStyle = "#000000";
+        bar_ctx.font = "10px monospace";
+        bar_ctx.textBaseline = "middle";
+        bar_ctx.textAlign = "right";
+        bar_ctx.fillText((this.i0 + 1).toFixed(0), start_frac * this.width, 5);
+        bar_ctx.textAlign = "left";
+        bar_ctx.fillText((rightEdgeI + 1).toFixed(0), end_frac * this.width, 5);
+
         ctx.fillStyle = "#000000";
         ctx.font = "18px monospace";
         ctx.textBaseline = "top";
@@ -278,14 +278,15 @@ canvas.addEventListener("mousedown", function (e) {
     mouse_down = true;
 });
 canvas.addEventListener("mouseup", function(e) {
-    mouse_down = false;
-    if (!dragging) {
+    if (mouse_down && !dragging) {
         app.epic_zoom();
     }
+    mouse_down = false;
     dragging = false;
 });
 canvas.addEventListener("mouseleave", function(e) {
     mouse_down = false;
+    dragging = false;
     app.deselect();
 });
 
@@ -310,6 +311,31 @@ canvas.addEventListener("mousemove", function (e) {
         app.select(i);
     } else {
         app.deselect();
+    }
+});
+
+bar_canvas.addEventListener("mousedown", function (e) {
+    mouse_down = true;
+});
+bar_canvas.addEventListener("mouseup", function (e) {
+    mouse_down = false;
+    dragging = false;
+});
+bar_canvas.addEventListener("mouseleave", function (e) {
+    mouse_down = false;
+    dragging = false;
+});
+bar_canvas.addEventListener("mousemove", function (e) {
+    const canvas_bounds = bar_canvas.getBoundingClientRect();
+    last_mouse_x = mouse_x;
+    last_mouse_y = mouse_y;
+    mouse_x = Math.round(e.clientX - canvas_bounds.left);
+    mouse_y = Math.round(e.clientY - canvas_bounds.top);
+    if (mouse_down) {
+        if (dragging) {
+            app.snap_i0(app.i0 + (mouse_x - last_mouse_x) * (app.seq.length + 1) / app.width);
+        }
+        dragging = true;
     }
 });
 
