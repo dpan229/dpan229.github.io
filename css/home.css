@@ -1,5 +1,5 @@
 body {
-    background-image: linear-gradient(to bottom right, #ffeea8, #e5ff86);
+    background-image: linear-gradient(to bottom right, #f3bc5c, #ffeea8);
 }
 
 #header_placeholder {
@@ -36,7 +36,7 @@ body {
 
 #padder {
     width: 100%;
-    min-height: 100%;
+    min-height: calc(100% - 8px);
 }
 
 .container {

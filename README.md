@@ -33,3 +33,11 @@ Use the scroll wheel to zoom in and out. Click and drag to move the view horizon
 ## [Image Sorter](https://dpan229.github.io/imagesorter/)
 
 This is an app that attempts to sort the pixels of an image in 2D. Each pixel is given a target position based on its color or original position, and every frame a subset of the pixels choose a random neighbor and swap with that neighbor if doing so would reduce the total loss, the sum of the square of each pixel's distance from its target position. The X and Y components of the target calculation can be set independently, allowing many possible combinations.
+
+## [Turmites](https://dpan229.github.io/turmites/)
+
+A turmite is a two-dimensional analogue of a Turing machine: rather than a one-dimensional tape, a turmite reads from and writes to a two-dimensional tape. Like a Turing machine, turmites have an internal state and take actions based on a combination of this state and the symbol below them on the tape.
+
+This app offers an interactive, customizable simulation of a turmite. The turmite's ruleset can be edited and the resulting behavior observed.
+
+There are two main types of turmites: relative turmites, which have an internal orientation and whose actions are relative to this orientation, and absolute termites, whose actions move them in absolute directions. Currently, only relative actions are implemented.

@@ -1,0 +1,146 @@
+<html>
+    <head>
+        <title>Turmites</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Turmites</span>
+        <span class="info">Use the mouse wheel to zoom in and out, click and drag to pan.</span>
+        <canvas id="turmiteCanvas" width="500" height="500"></canvas>
+        <div class="control_container">
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="-15" max="30" value="0" id="speed">
+                    <br>
+                    <label for="speed">Speed: <span id="speed_text">1.00</span>x</label>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <button id="playpause">Play</button>
+                </div>
+                <div class="control">
+                    <button id="step">Step</button>
+                </div>
+                <div class="control">
+                    <button id="reset">Reset</button>
+                </div>
+            </div>
+            <span class="info">Frame: <span id="frame">0</span></span>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Display options</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="checkbox" id="ground_display" checked>
+                    <label for="ground_display">Show ground numbers</label>
+                </div>
+                <div class="control">
+                    <input type="checkbox" id="state_display" checked>
+                    <label for="state_display">Show turmite state</label>
+                </div>
+                <div class="control">
+                    <input type="checkbox" id="orientation_display" checked>
+                    <label for="orientation_display">Show turmite orientation</label>
+                </div>
+            </div>
+        </div>
+        <div class="control_container" id="outer_table_container">
+            <span class="container_heading">Edit Ruleset</span>
+            <div id="table_container"></div>
+            <div class="spaced_control_group">
+                <div class="control">
+                    <button id="add_state">+ Add state</button>
+                </div>
+                <div class="control">
+                    <button id="add_ground">+ Add ground</button>
+                </div>
+            </div>
+            <div class="spaced_control_group">
+                <div class="control">
+                    <button id="randomize_actions">Randomize actions</button>
+                </div>
+                <div class="control">
+                    <button id="randomize_all">Randomize all</button>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Example rulesets</span>
+            <div class="spaced_control_group">
+                <div class="control">
+                    <button class="preset_button" data-ruleset="1,2,0,1,0,0,0,1">Langton's Ant</button>
+                    <div class="button_note">1S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="1,9,0,1,0,0,2,1,0,3,1,0,4,1,0,5,1,0,6,1,0,7,0,0,8,0,0,0,1">Expanding Square</button>
+                    <div class="button_note">1S, 9G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="1,12,0,1,1,0,2,1,0,3,0,0,4,0,0,5,0,0,6,1,0,7,0,0,8,0,0,9,0,0,10,1,0,11,1,0,0,1">Triangle Constructor</button>
+                    <div class="button_note">1S, 12G</div>
+                </div>
+            </div>
+            <div class="spaced_control_group">
+                <div class="control">
+                    <button class="preset_button" data-ruleset="3,3,1,2,2,0,0,0,0,0,0,2,1,3,1,0,2,0,0,0,2,0,2,2,1,2,1,2,3">1D Binary Counter</button>
+                    <div class="button_note">3S, 3G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="1,2,0,1,0,0,0,2">Minimal Bin Counter</button>
+                    <div class="button_note">1S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="1,10,0,1,0,0,2,0,0,3,0,0,4,0,0,5,0,0,6,0,0,7,0,0,8,0,0,9,0,0,0,2">Minimal Dec Counter</button>
+                    <div class="button_note">1S, 10G</div>
+                </div>
+            </div>
+            <div class="spaced_control_group">
+                <div class="control">
+                    <button class="preset_button" data-ruleset="2,2,1,1,2,0,1,0,1,1,1,0,0,2">Spiral growth</button>
+                    <div class="button_note">2S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="2,2,1,1,1,1,1,0,1,1,1,0,0,1">Winding lines</button>
+                    <div class="button_note">2S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="2,2,1,1,2,0,1,2,0,1,0,0,1,3">Bricks</button>
+                    <div class="button_note">2S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="2,2,1,1,0,1,1,0,1,1,1,0,0,2">Fibonacci spiral</button>
+                    <div class="button_note">2S, 2G</div>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <button class="preset_button" data-ruleset="3,2,1,1,0,1,0,1,2,1,2,2,0,2,0,1,2,0,0,2">Langton's pipes</button>
+                    <div class="button_note">3S, 2G</div>
+                </div>
+                <div class="control">
+                    <button class="preset_button" data-ruleset="11,2,1,1,1,1,0,0,2,1,0,2,0,1,3,1,2,3,0,2,4,1,0,4,0,1,5,1,0,5,0,1,6,1,1,6,0,0,7,1,0,7,0,1,8,1,3,8,0,3,9,0,2,9,1,2,10,1,3,10,0,3,0,0,0,0,1,1">Langton's blocks</button>
+                    <div class="button_note">11S, 2G</div>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Ruleset import / export</span>
+            <div class="control_group">
+                <div class="control">
+                    <button id="export_ruleset">Show current ruleset string</button>
+                </div>
+                <div class="control">
+                    <textarea id="ruleset_string_box"></textarea>
+                </div>
+                <div class="control">
+                    <button id="import_ruleset">Set ruleset from string</button>
+                </div>
+            </div>
+        </div>
+        <script src="/js/include_html.js"></script>
+        <script src="js/turmites.js"></script>
+    </body>
+</html>
