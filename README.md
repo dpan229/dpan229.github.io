@@ -8,7 +8,7 @@ The live site is available here: [dpan229.github.io](https://dpan229.github.io)
 
 ## [Word Former](https://dpan229.github.io/wordformer/)
 
-This is an interactive app where you form words from their constituent letters. Add letters to the field by clicking the buttons or typing on your keyboard. Words attract each other if they can combine to form a single longer word, and combine when they collide. Pairs that cannot form a valid word combine into unstable words, which decay over time. The bottom of the page has a list of all of the unique words formed, ordered by length then alphabetically.
+This is an interactive app where you form words from their constituent letters. Add letters to the field by clicking the buttons or typing on your keyboard. Words attract each other if they can combine to form a single longer word, and combine when they collide. Pairs that cannot form a valid word combine into unstable words, which decay over time. The bottom of the page has a list of all of the unique words formed, sorted by length then alphabetically.
 
 Word list source: [https://github.com/dwyl/english-words](https://github.com/dwyl/english-words)
 
@@ -20,9 +20,9 @@ The app displays a visible representation of the Markov chain at the top, showin
 
 ## [Ants](https://dpan229.github.io/ants/)
 
-This is a simulation of a large number of "ants" in a looping 2D space. On every frame, each ant places a trail at its current position and samples 5 points in an arc in front of itself to determine how much to turn. The amount that the ant turns is a weighted average of the amount of trails at the sampled points plus a set weight assigned to a random angle to make its movements nondeterministic. The behavior of each individual ant is relatively simple but in large numbers emergent collective behaviors appear. 
+This is a simulation of a large number of "ants" in a looping 2D space. On every frame, each ant places a trail at its current position and samples 5 points in an arc in front of itself to determine how much to turn. The amount that the ant turns is a weighted average of the amount of trails at the sampled points plus a set weight assigned to a random angle to make its movements nondeterministic. The behavior of each individual ant is simple, but in large numbers they exhibit emergent collective behaviors. 
 
-The app allows you to place trails by clicking in the field and has controls for varying the paramters of the ants' behavior.
+The app allows you to place trails by clicking in the field and has controls for varying the parameters of the ants' behavior.
 
 ## [Vaneck Sequence Explorer](https://dpan229.github.io/vaneck/)
 
@@ -32,7 +32,7 @@ Use the scroll wheel to zoom in and out. Click and drag to move the view horizon
 
 ## [Image Sorter](https://dpan229.github.io/imagesorter/)
 
-This is an app that attempts to sort the pixels of an image in 2D. Each pixel is given a target position based on its color or original position, and every frame a subset of the pixels choose a random neighbor and swap with that neighbor if doing so would reduce the total loss, the sum of the square of each pixel's distance from its target position. The X and Y components of the target calculation can be set independently, allowing many possible combinations.
+This is an app that "sorts" the pixels of an image in 2D. Each pixel is given a target position based on its color. Every frame, a subset of the pixels choose a random neighbor to swap with, and perform the swap only if doing so would reduce the total loss, the sum of the square of each pixel's distance from its target position. The X and Y components of the target calculation can be set independently, allowing many possible combinations.
 
 ## [Turmites](https://dpan229.github.io/turmites/)
 
