@@ -7,13 +7,19 @@
     margin: 5px auto;
 }
 
+.explanation {
+    text-align: center;
+    margin: 5px;
+}
+
 #canvas_container {
     display: flex;
     width: fit-content;
     margin: 0 auto;
 }
 
-canvas {
+#main_canvas {
+    touch-action: none;
     outline: 1px solid black;
 }
 
@@ -30,6 +36,7 @@ canvas {
     height: 40px;
     border-radius: 4px;
     margin: auto 0;
+    font-family: monospace;
     font-size: 20px;
 }
 
@@ -55,11 +62,6 @@ canvas {
     width: 100%;
     padding: 5px;
     margin: 2px;
-}
-
-.explanation {
-    text-align: center;
-    margin: 5px;
 }
 
 #wordList {

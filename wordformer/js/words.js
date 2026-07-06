@@ -1,14 +1,21 @@
-const canvas = document.getElementById("mainCanvas");
+const canvas = document.getElementById("main_canvas");
 const ctx = canvas.getContext("2d");
 
 // keep track of mouse position on the canvas and whether mouse is up or down
 let mouse_down = false;
-canvas.addEventListener("mousedown", () => mouse_down = true);
-canvas.addEventListener("mouseup", () => mouse_down = false);
+canvas.addEventListener("pointerdown", function (e) {
+    mouse_down = true;
+
+    const rect = canvas.getBoundingClientRect();
+    mouse_x = e.clientX - rect.left;
+    mouse_y = e.clientY - rect.top;
+});
+canvas.addEventListener("pointerup", () => mouse_down = false);
+canvas.addEventListener("pointercancel", () => mouse_down = false);
 
 let mouse_x = 0;
 let mouse_y = 0;
-canvas.addEventListener("mousemove", function(e) {
+canvas.addEventListener("pointermove", function (e) {
     const rect = canvas.getBoundingClientRect();
     mouse_x = e.clientX - rect.left;
     mouse_y = e.clientY - rect.top;
