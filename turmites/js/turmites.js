@@ -1,8 +1,16 @@
-const canvas = document.getElementById("turmiteCanvas");
+const canvas = document.getElementById("turmite_canvas");
 const ctx = canvas.getContext("2d");
 
 const STATE_CAP = 26;
 const GROUND_CAP = 12;
+
+const MIN_ZOOM = 2.0;
+const MAX_ZOOM = 50.0;
+
+const WORLD_WIDTH = 250;
+const WORLD_HEIGHT = 250;
+const CANVAS_WIDTH = 500;
+const CANVAS_HEIGHT = 500;
 
 const GROUND_COLORS = [
     "#000000", // 0: black
@@ -503,13 +511,13 @@ class TurmiteWorld {
      */
     quantize_view_params(target_scale, target_x0, target_y0) {
         this.scale = Math.round(target_scale);
-        this.x0 = Math.round(target_x0 * 16) / 16;
-        this.y0 = Math.round(target_y0 * 16) / 16;
+        this.x0 = Math.floor(target_x0 * 16) / 16;
+        this.y0 = Math.floor(target_y0 * 16) / 16;
         this.refresh_display();
     }
 }
 
-const world = new TurmiteWorld(250, 250, ctx);
+const world = new TurmiteWorld(WORLD_WIDTH, WORLD_HEIGHT, ctx);
 
 const r = new Ruleset(1, 12);
 // set ruleset to Langton's ant
@@ -546,43 +554,141 @@ let target_x0 = 115.5;
 let target_y0 = 115.5;
 world.quantize_view_params(target_scale, target_x0, target_y0);
 
-// set up click and drag
-let mouse_down = false;
-canvas.addEventListener("mousedown", function (e) {
-    mouse_down = true;
+// set up click and drag and touchscreen controls
+const pointers_down = new Map();
+const pointers_hovering = new Map();
+/**
+ * Returns an arbitrary value from the given map that is not associated with
+ * the given key.
+ * If there are no such values, returns null.
+ * @param {Map} map 
+ * @param {*} exclude_key 
+ * @returns 
+ */
+function get_other_value(map, exclude_key) {
+    for (const [k, v] of map.entries()) {
+        if (k != exclude_key) {
+            return v;
+        }
+    }
+    return null;
+}
+/**
+ * Clamp target x0 and target y0 so that the view stays within the world boundaries
+ */
+function clip_target_position() {
+    target_x0 = Math.max(0.0, Math.min(target_x0, WORLD_WIDTH - CANVAS_WIDTH / Math.round(target_scale)));
+    target_y0 = Math.max(0.0, Math.min(target_y0, WORLD_HEIGHT - CANVAS_HEIGHT / Math.round(target_scale)));
+}
+
+canvas.addEventListener("pointerdown", function (e) {
+    const canvas_bounds = canvas.getBoundingClientRect();
+
+    pointers_down.set(e.pointerId, {
+        x: e.clientX - canvas_bounds.left,
+        y: e.clientY - canvas_bounds.top,
+    });
 });
-canvas.addEventListener("mouseup", function (e) {
-    mouse_down = false;
+canvas.addEventListener("pointerup", function (e) {
+    pointers_down.delete(e.pointerId);
+});
+canvas.addEventListener("pointercancel", function (e) {
+    pointers_down.delete(e.pointerId);
 });
 
-let mouse_x = 0.0;
-let mouse_y = 0.0;
-canvas.addEventListener("mousemove", function (e) {
+canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
-    const new_mouse_x = e.clientX - canvas_bounds.left;
-    const new_mouse_y = e.clientY - canvas_bounds.top;
-    if (mouse_down) {
-        target_x0 += (mouse_x - new_mouse_x) / target_scale;
-        target_y0 += (mouse_y - new_mouse_y) / target_scale;
+    const new_x = e.clientX - canvas_bounds.left;
+    const new_y = e.clientY - canvas_bounds.top;
+    if (pointers_down.has(e.pointerId)) {
+        const pointer_props = pointers_down.get(e.pointerId);
+        const old_x = pointer_props.x;
+        const old_y = pointer_props.y;
+
+        if (pointers_down.size > 1) {
+            // multiple pointers down: pinch zoom
+            const secondary_pointer = get_other_value(pointers_down, e.pointerId);
+
+            const old_p_to_p_x = old_x - secondary_pointer.x;
+            const old_p_to_p_y = old_y - secondary_pointer.y;
+            const new_p_to_p_x = new_x - secondary_pointer.x;
+            const new_p_to_p_y = new_y - secondary_pointer.y;
+
+            const old_distance = Math.sqrt(
+                old_p_to_p_x**2 + old_p_to_p_y**2
+            );
+            const new_distance = Math.sqrt(
+                new_p_to_p_x**2 + new_p_to_p_y**2
+            );
+            const new_scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, 
+                target_scale * new_distance / old_distance
+            ));
+            target_x0 += secondary_pointer.x * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+            target_y0 += secondary_pointer.y * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+
+            // pan the view
+            // factor = sine of angle between vector from secondary pointer to old position
+            // and vector from old position to new position
+            const dx = new_x - old_x;
+            const dy = new_y - old_y;
+            const factor = Math.sqrt(
+                1 - (
+                    old_p_to_p_x * dx + old_p_to_p_y * dy
+                )**2 / (
+                    (old_p_to_p_x**2 + old_p_to_p_y**2) * (dx**2 + dy**2)
+                )
+            );
+            target_x0 -= factor * dx / target_scale / pointers_down.size;
+            target_y0 -= factor * dy / target_scale / pointers_down.size;
+            
+            target_scale = new_scale;
+        } else {
+            // dragging: pan the view
+            target_x0 += (old_x - new_x) / target_scale;
+            target_y0 += (old_y - new_y) / target_scale;
+        }
+
+        clip_target_position();
         world.quantize_view_params(
             target_scale,
             target_x0,
             target_y0
         );
+
+        pointer_props.x = new_x;
+        pointer_props.y = new_y;
+    } else {
+        // pointer is moving but not down: track as hovering
+        pointers_hovering.set(e.pointerId, {
+            x: new_x,
+            y: new_y
+        })
     }
-    mouse_x = new_mouse_x;
-    mouse_y = new_mouse_y;
+});
+
+// Clear pointers on mouse leave to prevent mouse from staying down
+// if you let go of mouse while off the canvas.
+// Leaving canvas with touchscreen doesn't trigger this
+canvas.addEventListener("mouseleave", function (e) {
+    pointers_down.clear();
+    pointers_hovering.clear();
 });
 
 // set up zooming with mouse wheel
 canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
 
-    const new_scale = Math.max(2.0, Math.min(50.0, target_scale * 1.003**-e.deltaY));
-    target_x0 += mouse_x * (1/Math.round(target_scale) - 1/Math.round(new_scale));
-    target_y0 += mouse_y * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+    const pointer_props = get_other_value(pointers_down, null) ?? get_other_value(pointers_hovering, null);
+    if (pointer_props === null) {
+        return;
+    }
+
+    const new_scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, target_scale * 1.003**-e.deltaY));
+    target_x0 += pointer_props.x * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+    target_y0 += pointer_props.y * (1/Math.round(target_scale) - 1/Math.round(new_scale));
     target_scale = new_scale;
 
+    clip_target_position();
     world.quantize_view_params(target_scale, target_x0, target_y0);
 });
 
