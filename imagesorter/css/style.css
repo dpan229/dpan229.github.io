@@ -93,3 +93,16 @@ table {
     margin: 0 8px;
     text-align: center;
 }
+
+#swap_distance {
+    width: 250px;
+}
+
+#pixel_count {
+    width: 250px;
+}
+
+.example_image_button {
+    width: 70px;
+    height: 40px;
+}
