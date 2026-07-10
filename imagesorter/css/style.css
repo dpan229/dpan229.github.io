@@ -7,6 +7,10 @@
     margin: 5px auto 25px auto;
 }
 
+#interact_canvas {
+    touch-action: none;
+}
+
 .layer_canvas {
     position: absolute;
     top: 0;
@@ -20,6 +24,7 @@
     width: 500px;
     height: 20px;
     text-align: center;
+    overflow: hidden;
 }
 
 #arrow_left {
@@ -32,6 +37,7 @@
     writing-mode: sideways-lr;
     text-orientation: sideways;
     text-align: center;
+    overflow: hidden;
 }
 
 .info_container {

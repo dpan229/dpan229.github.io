@@ -531,32 +531,166 @@ document.querySelectorAll('input[name="y_target"]').forEach((elem) => {
     });
 });
 
+/**
+ * Draws multiple lines on the given canvas drawing context to simulate
+ * a single line from (`x1`, `y1`) to (`x2`, `y2`) wrapping around the edges. 
+ * Coordinates may be outside of the canvas bounds 
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {Number} x1 
+ * @param {Number} y1 
+ * @param {Number} x2 
+ * @param {Number} y2 
+ * @param {Boolean} wrap_x 
+ * @param {Boolean} wrap_y 
+ * @param {Number} line_limit 
+ */
+function draw_line_wrapped(ctx, x1, y1, x2, y2, 
+                           wrap_x=true, wrap_y=true, 
+                           line_limit=100) {
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+    let offset_x = width * Math.floor(x1 / width);
+    let offset_y = height * Math.floor(y1 / height);
+    const final_offset_x = width * Math.floor(x2 / width);
+    const final_offset_y = height * Math.floor(y2 / height);
+
+    ctx.beginPath();
+    ctx.moveTo(
+        wrap_x ? x1 - offset_x : x1, 
+        wrap_y ? y1 - offset_y : y1
+    );
+    ctx.lineTo(
+        wrap_x ? x2 - offset_x : x2, 
+        wrap_y ? y2 - offset_y : y2
+    );
+    let lines = 1;
+    while ((offset_x != final_offset_x || offset_y != final_offset_y) && lines < line_limit) {
+        const cross_x = y2 > y1 ?
+            // find x position of point on current line where y = height
+            (height - y1 + offset_y) * (x2 - x1) / (y2 - y1) + x1 - offset_x
+        :
+            // find x position of point on current line where y = 0
+            (-y1 + offset_y) * (x2 - x1) / (y2 - y1) + x1 - offset_x
+        ;
+        let draw = true;
+        if (cross_x < 0) {
+            offset_x -= width;
+            draw = wrap_x;
+        } else if (cross_x > width) {
+            offset_x += width;
+            draw = wrap_x;
+        } else if (y2 > y1) {
+            offset_y += height;
+            draw = wrap_y;
+        } else {
+            offset_y -= height;
+            draw = wrap_y;
+        }
+        if (draw) {
+            ctx.moveTo(
+                wrap_x ? x1 - offset_x : x1, 
+                wrap_y ? y1 - offset_y : y1
+            );
+            ctx.lineTo(
+                wrap_x ? x2 - offset_x : x2, 
+                wrap_y ? y2 - offset_y : y2
+            );
+        }
+        lines++;
+    }
+    ctx.stroke();
+}
+
 // set up mouseover effect on overlayed canvas
 const interact_canvas = document.getElementById("interact_canvas");
 interact_canvas.width = sorter.width;
 interact_canvas.height = sorter.height;
 const interact_ctx = interact_canvas.getContext("2d");
-interact_canvas.addEventListener("mousemove", function (e) {
+interact_canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = interact_canvas.getBoundingClientRect();
     mouse_x = Math.round(e.clientX - canvas_bounds.left);
     mouse_y = Math.round(e.clientY - canvas_bounds.top);
 
-    target_x = sorter.x_func(mouse_x, mouse_y);
-    target_y = sorter.y_func(mouse_x, mouse_y);
+    const target_x = sorter.x_func(mouse_x, mouse_y);
+    const target_y = sorter.y_func(mouse_x, mouse_y);
+
+    let target_x_wrapped = target_x;
+    let target_y_wrapped = target_y;
+    const dx = target_x - mouse_x;
+    const dy = target_y - mouse_y;
+    let abs_dx = Math.abs(dx);
+    if (sorter.wrap_x) {
+        const abs_dx2 = Math.abs(dx - sorter.width);
+        if (abs_dx2 < abs_dx) {
+            abs_dx = abs_dx2;
+            target_x_wrapped -= interact_canvas.width;
+        }
+        const abs_dx3 = Math.abs(dx + sorter.width);
+        if (abs_dx3 < abs_dx) {
+            abs_dx = abs_dx3;
+            target_x_wrapped += interact_canvas.width;
+        }
+    }
+    let abs_dy = Math.abs(dy);
+    if (sorter.wrap_y) {
+        const abs_dy2 = Math.abs(dy - sorter.height);
+        if (abs_dy2 < abs_dy) {
+            abs_dy = abs_dy2;
+            target_y_wrapped -= interact_canvas.height;
+        }
+        const abs_dy3 = Math.abs(dy + sorter.height);
+        if (abs_dy3 < abs_dy) {
+            abs_dy = abs_dy3;
+            target_y_wrapped += interact_canvas.height;
+        }
+    }
 
     interact_ctx.clearRect(0, 0, interact_canvas.width, interact_canvas.height);
-    const background_rgb = sorter.get_pixel(Math.round(target_x), Math.round(target_y));
-    if (background_rgb.r + background_rgb.g + background_rgb.b > 384) {
-        interact_ctx.strokeStyle = "black";
-    } else {
-        interact_ctx.strokeStyle = "white";
-    }
-    interact_ctx.lineWidth = 1;
-    interact_ctx.beginPath();
-    interact_ctx.arc(target_x, target_y, 5, 0, 2 * Math.PI);
-    interact_ctx.stroke();
+    // draw white lines
+    interact_ctx.strokeStyle = "white";
+    interact_ctx.lineWidth = 4;
+    draw_line_wrapped(
+        interact_ctx, mouse_x, mouse_y, target_x_wrapped, target_y_wrapped,
+        sorter.wrap_x, sorter.wrap_y
+    );
+
+    // draw arrowhead
+    const dx_wrapped = target_x_wrapped - mouse_x;
+    const dy_wrapped = target_y_wrapped - mouse_y;
+    const distance_wrapped = Math.sqrt(dx_wrapped*dx_wrapped + dy_wrapped*dy_wrapped);
+    const head_center_x = target_x_wrapped - 5 * dx_wrapped / distance_wrapped;
+    const head_center_y = target_y_wrapped - 5 * dy_wrapped / distance_wrapped;
+    const head_1_x = head_center_x + 3 * dy_wrapped / distance_wrapped;
+    const head_1_y = head_center_y - 3 * dx_wrapped / distance_wrapped;
+    const head_2_x = head_center_x - 3 * dy_wrapped / distance_wrapped;
+    const head_2_y = head_center_y + 3 * dx_wrapped / distance_wrapped;
+    draw_line_wrapped(
+        interact_ctx, target_x_wrapped, target_y_wrapped, head_1_x, head_1_y,
+        sorter.wrap_x, sorter.wrap_y
+    );
+    draw_line_wrapped(
+        interact_ctx, target_x_wrapped, target_y_wrapped, head_2_x, head_2_y,
+        sorter.wrap_x, sorter.wrap_y
+    );
+
+    // draw black lines
+    interact_ctx.strokeStyle = "black";
+    interact_ctx.lineWidth = 2;
+    draw_line_wrapped(
+        interact_ctx, mouse_x, mouse_y, target_x_wrapped, target_y_wrapped,
+        sorter.wrap_x, sorter.wrap_y
+    );
+    // draw arrowhead
+    draw_line_wrapped(
+        interact_ctx, target_x_wrapped, target_y_wrapped, head_1_x, head_1_y,
+        sorter.wrap_x, sorter.wrap_y
+    );
+    draw_line_wrapped(
+        interact_ctx, target_x_wrapped, target_y_wrapped, head_2_x, head_2_y,
+        sorter.wrap_x, sorter.wrap_y
+    );
 });
-interact_canvas.addEventListener("mouseleave", function (e) {
+interact_canvas.addEventListener("pointerleave", function (e) {
     interact_ctx.clearRect(0, 0, interact_canvas.width, interact_canvas.height);
 });
 
@@ -601,8 +735,6 @@ function set_image_from_path(path) {
     image.src = path;
     image.onload = () => resize_and_apply_image(image);
 }
-
-//set_image_from_path("images/tree.jpg");
 
 // set up example image buttons
 for (const example_button of document.getElementsByClassName("example_image_button")) {
