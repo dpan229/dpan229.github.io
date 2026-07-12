@@ -605,7 +605,13 @@ canvas.addEventListener("pointermove", function (e) {
         const old_x = pointer_props.x;
         const old_y = pointer_props.y;
 
-        if (pointers_down.size > 1) {
+        // exit if pointer hasn't actually moved
+        if (new_x == old_x && new_y == old_y) {
+            return;
+        }
+
+        const pointer_count = pointers_down.size;
+        if (pointer_count > 1) {
             // multiple pointers down: pinch zoom
             const secondary_pointer = get_other_value(pointers_down, e.pointerId);
 
@@ -638,8 +644,8 @@ canvas.addEventListener("pointermove", function (e) {
                     (old_p_to_p_x**2 + old_p_to_p_y**2) * (dx**2 + dy**2)
                 )
             );
-            target_x0 -= factor * dx / target_scale / pointers_down.size;
-            target_y0 -= factor * dy / target_scale / pointers_down.size;
+            target_x0 -= factor * dx / target_scale / pointer_count;
+            target_y0 -= factor * dy / target_scale / pointer_count;
             
             target_scale = new_scale;
         } else {
@@ -662,7 +668,7 @@ canvas.addEventListener("pointermove", function (e) {
         pointers_hovering.set(e.pointerId, {
             x: new_x,
             y: new_y
-        })
+        });
     }
 });
 
