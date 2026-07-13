@@ -20,8 +20,7 @@ body {
         -5px 5px 0px black, 
         -5px -5px 0px black,
         5px 5px 0px black,
-        5px -5px 0px black,
-        0px 10px 100px rgba(0, 0, 0, 0.75);
+        5px -5px 0px black;
     cursor: pointer;
     overflow: hidden;
 }
