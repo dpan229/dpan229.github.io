@@ -744,7 +744,9 @@ function animate() {
                 generate_button.innerHTML = "Generate random output";
                 generating = false;
             } else {
-                output = output.concat(world.sep.concat(node.label));
+                output = output.concat(world.sep.concat(
+                    node.static_label ? node.label : world.get_last_element(node.context)
+                ));
                 output_box.innerText = output;
             }
             generate_cooldown = generate_max_cooldown;
