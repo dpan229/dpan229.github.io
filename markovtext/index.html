@@ -8,32 +8,35 @@
         <div id="header_placeholder"></div>
         <div id="page_container">
             <span class="main_header">Markov Text</span>
-            <canvas id="markovCanvas" width="800" height="800"></canvas>
-            <div class="settings_container">
-                <span class="settings_header">Display settings:</span>
-                <span class="setting">
-                    <input type="checkbox" id="autozoom" checked>
-                    <label for="autozoom">Zoom to fit</label>
-                </span>
-                <span class="setting">
-                    <input type="checkbox" id="physics" checked>
-                    <label for="physics">Physics</label>
-                </span>
-                <span class="setting">
-                    <label for="node_text_select">Node text:</label>
-                    <select name="node_text" id="node_text_select">
-                        <option value="last_elem">Last element</option>
-                        <option value="whole_context">Whole context</option>
-                    </select>
-                </span>
+            <span class="section_header"><b>Display</b> <span class="collapse" id="collapse_display">(Collapse)</span></span>
+            <div id="display_container">
+                <canvas id="markovCanvas" width="800" height="800"></canvas>
+                <div class="settings_container">
+                    <span class="settings_header">Display settings:</span>
+                    <span class="setting">
+                        <input type="checkbox" id="physics" checked>
+                        <label for="physics">Physics</label>
+                    </span>
+                    <span class="setting">
+                        <input type="checkbox" id="autozoom" checked>
+                        <label for="autozoom">Zoom to fit</label>
+                    </span>
+                    <span class="setting">
+                        <label for="node_text_select">Node text:</label>
+                        <select name="node_text" id="node_text_select">
+                            <option value="last_elem">Last element</option>
+                            <option value="whole_context">Whole context</option>
+                        </select>
+                    </span>
+                </div>
             </div>
-            <span class="section_header">Focus info</span>
-            <div id="focusInfo">
+            <span class="section_header"><b>Focus info</b> <span class="collapse" id="collapse_focus">(Collapse)</span></span>
+            <div id="focus_info">
                 <div class="scrollbox" id="focusLeft"></div>
                 <div id="focusHeader"><pre id="focusHeaderText"></pre></div>
                 <div class="scrollbox" id="focusRight"></div>
             </div>
-            <span class="section_header">Input text</span>
+            <span class="section_header"><b>Input text</b></span>
             <div id="textbox" contenteditable="true">Type in this box</div>
             <div class="settings_container">
                 <span class="settings_header">Parsing settings:</span>
@@ -49,18 +52,18 @@
                     <label for="context_size_slider" id="context_size_label">Context window: 3 characters</label>
                 </span>
             </div>
-            <span class="section_header">Output text</span>
+            <div class="control">
+                <button id="start_random">Generate random output</button>
+            </div>
+            <span class="section_header"><b>Output text</b></span>
+            <div id="output"></div>
             <div class="settings_container">
                 <span class="settings_header">Output settings:</span>
-                <span class="setting">
-                    <button id="start_random">Generate random output</button>
-                </span>
                 <span class="setting">
                     <input type="range" id="random_speed" min="0" max="10" value="3">
                     <label for="random_speed" id="random_speed_label">Wait frames: 3</label>
                 </span>
             </div>
-            <div id="output"></div>
         </div>
         <script src="/js/include_html.js"></script>
         <script src="js/markov.js"></script>

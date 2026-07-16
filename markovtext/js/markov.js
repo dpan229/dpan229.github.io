@@ -446,10 +446,10 @@ class MarkovWorld {
                     node2.vy -= step * factor * dy / d2_clamp;
                 } else {
                     // push unconnected nodes apart
-                    node1.vx -= 0.25 * step * dx / d2_clamp;
-                    node1.vy -= 0.25 * step * dy / d2_clamp;
-                    node2.vx += 0.25 * step * dx / d2_clamp;
-                    node2.vy += 0.25 * step * dy / d2_clamp;
+                    node1.vx -= step * dx / d2_clamp;
+                    node1.vy -= step * dy / d2_clamp;
+                    node2.vx += step * dx / d2_clamp;
+                    node2.vy += step * dy / d2_clamp;
                 }
             }
         }
@@ -579,6 +579,35 @@ class MarkovWorld {
         }
     }
 }
+
+// set up display collapse control
+let display_visible = true;
+const display_container = document.getElementById("display_container");
+const collapse_display = document.getElementById("collapse_display");
+collapse_display.addEventListener("click", function (e) {
+    display_visible = !display_visible;
+    if (display_visible) {
+        display_container.setAttribute("style", "");
+        collapse_display.textContent = "(Collapse)";
+    } else {
+        display_container.setAttribute("style", "display: none;");
+        collapse_display.textContent = "(Show)";
+    }
+});
+// set up focus info collapse control
+let focus_info_visible = true;
+const focus_info = document.getElementById("focus_info");
+const collapse_focus = document.getElementById("collapse_focus");
+collapse_focus.addEventListener("click", function (e) {
+    focus_info_visible = !focus_info_visible;
+    if (focus_info_visible) {
+        focus_info.setAttribute("style", "");
+        collapse_focus.textContent = "(Collapse)";
+    } else {
+        focus_info.setAttribute("style", "display: none;");
+        collapse_focus.textContent = "(Show)";
+    }
+});
 
 // set up autozoom control
 const autozoom_checkbox = document.getElementById("autozoom");
@@ -714,26 +743,6 @@ textbox.addEventListener("input", function () {
 world.set_text(textbox.innerText);
 
 function animate() {
-    if (autozoom) {
-        // zoom to fit all objects on screen
-        const bounds = world.bounding_coords();
-        const d = Math.max(bounds.max_x - bounds.min_x, bounds.max_y - bounds.min_y, 100);
-        scale = 800 / d;
-        x0 = (bounds.min_x + bounds.max_x) / 2 - d / 2;
-        y0 = (bounds.min_y + bounds.max_y) / 2 - d / 2;
-    }
-
-    if (mouse_down) {
-        // move dragged node to mouse position
-        if (dragging_node !== null) {
-            const world_x = mouse_x / scale + x0;
-            const world_y = mouse_y / scale + y0;
-            dragging_node.x = world_x;
-            dragging_node.y = world_y;
-            dragging_node.vx = 0.0;
-            dragging_node.vy = 0.0;
-        }
-    }
 
     if (generating) {
         if (generate_cooldown <= 0) {
@@ -755,10 +764,33 @@ function animate() {
         }
     }
 
-    ctx.clearRect(0, 0, 800, 800);
-    world.draw(x0, y0, scale);
-    if (physics) {
-        world.physics();
+    if (display_visible) {
+        if (autozoom) {
+            // zoom to fit all objects on screen
+            const bounds = world.bounding_coords();
+            const d = Math.max(bounds.max_x - bounds.min_x, bounds.max_y - bounds.min_y, 100);
+            scale = 800 / d;
+            x0 = (bounds.min_x + bounds.max_x) / 2 - d / 2;
+            y0 = (bounds.min_y + bounds.max_y) / 2 - d / 2;
+        }
+
+        if (mouse_down) {
+            // move dragged node to mouse position
+            if (dragging_node !== null) {
+                const world_x = mouse_x / scale + x0;
+                const world_y = mouse_y / scale + y0;
+                dragging_node.x = world_x;
+                dragging_node.y = world_y;
+                dragging_node.vx = 0.0;
+                dragging_node.vy = 0.0;
+            }
+        }
+
+        ctx.clearRect(0, 0, 800, 800);
+        world.draw(x0, y0, scale);
+        if (physics) {
+            world.physics();
+        }
     }
 
     requestAnimationFrame(animate);
