@@ -41,21 +41,29 @@ strong {
     background-color: lightskyblue;
 }
 
-#focus_info {
-    width: 100%;
-    height: 100px;
+#focus_scrolls {
     display: flex;
 }
 
+.scrollbox_container {
+    flex: 1;
+}
+
+.small_header {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    font-size: 12px;
+}
+
 .scrollbox {
-    height: 100%;
+    height: 100px;
     overflow-y: auto;
     border-radius: 3px;
     padding-left: 4px;
     padding-right: 4px;
-    flex: 1;
 
-    font-family: 'Courier New', Courier, monospace;
+    font-family: monospace;
     white-space: pre;
 }
 
@@ -68,21 +76,27 @@ strong {
     background-color: lightcoral;
 }
 
-#focusHeader {
-    height: 100%;
+#focus_header {
+    height: 50px;
     background-color: rgb(176, 225, 255);
     border-radius: 3px;
-    flex: 3;
 
     /* center content */
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 
-#focusHeaderText {
-    font-family: 'Courier New', Courier, monospace;
+#focus_header_text {
+    font-family: monospace;
     font-size: 24px;
+    white-space: pre;
+}
+
+#focus_header_count {
+    font-family: monospace;
+    font-size: 12px;
 }
 
 .slider {

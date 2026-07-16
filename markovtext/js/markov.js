@@ -1,12 +1,20 @@
 const markov_canvas = document.getElementById("markovCanvas");
 const ctx = markov_canvas.getContext("2d");
 
-const focus_header = document.getElementById("focusHeaderText");
+const focus_header = document.getElementById("focus_header_text");
+const focus_header_count = document.getElementById("focus_header_count")
 const focus_left = document.getElementById("focusLeft");
 const focus_right = document.getElementById("focusRight");
 
-function escape_html(s) {
-    return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+function escape_text(s) {
+    return clean_text(s.replaceAll("&", "&amp;")
+                       .replaceAll("<", "&lt;")
+                       .replaceAll(">", "&gt;"));
+}
+
+function clean_text(s) {
+    return s.replaceAll("\n", "\\n")
+            .replaceAll("\t", "\\t");
 }
 
 function add_colors(base, c1, w1, c2, w2) {
@@ -282,28 +290,33 @@ class MarkovWorld {
     set_focus(node) {
         this.focus = node;
 
-        focus_header.innerHTML = `<strong>${escape_html(node.context)}</strong>`;
+        focus_header.textContent = clean_text(node.context);
+
         const sorted_lefts = [...node.secondary_connections.entries()].sort((a, b) => b[1] - a[1]);
         const lefts = [];
+        const postcontext = escape_text(node.static_label ? node.label : this.get_last_element(node.context));
+        let total_occurances = 0;
         sorted_lefts.forEach(kv => {
             const [node2, count] = kv;
-            let precontext;
-            if (node2.static_label) {
-                precontext = node2.label;
-            } else if (node2.context.length < this.context_size) {
-                precontext = "";
-            } else {
-                precontext = node2.context.split(this.sep)[0];
-            }
-            lefts.push(`${escape_html(precontext)}${this.sep}<strong>${escape_html(node.context)}</strong> <b>${count}</b>`);
+            total_occurances += count;
+            lefts.push(`<strong>${escape_text(node2.context)}</strong>${this.sep}${postcontext} <b>${count}</b>`);
         });
         focus_left.innerHTML = lefts.join("<br>");
+        focus_header_count.textContent = `Occurances: ${Math.max(1, total_occurances)}`;
+
+        let precontext;
+        if (node.static_label) {
+            precontext = escape_text(node.label);
+        } else if (node.context.length < this.context_size) {
+            precontext = "";
+        } else {
+            precontext = escape_text(node.context.split(this.sep)[0]);
+        }
         const sorted_rights = [...node.primary_connections.entries()].sort((a, b) => b[1] - a[1]);
         const rights = [];
         sorted_rights.forEach(kv => {
             const [node2, count] = kv;
-            const postcontext = node2.static_label ? node2.label : this.get_last_element(node2.context);
-            rights.push(`<b>${count}</b> <strong>${escape_html(node.context)}</strong>${this.sep}${escape_html(postcontext)}`);
+            rights.push(`<b>${count}</b> ${precontext}${this.sep}<strong>${escape_text(node2.context)}</strong>`);
         });
         focus_right.innerHTML = rights.join("<br>");
 
@@ -382,7 +395,8 @@ class MarkovWorld {
     clear_focus() {
         this.focus = null;
 
-        focus_header.innerHTML = "";
+        focus_header.textContent = "";
+        focus_header_count.textContent = "";
         focus_left.innerHTML = "";
         focus_right.innerHTML = "";
         this.forward_depth.clear();
