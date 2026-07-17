@@ -114,15 +114,19 @@ strong {
     opacity: 1;
 }
 
-.control {
-    width: fit-content;
+.control_group {
     display: flex;
-    margin: 8px auto;
+    justify-content: center;
 }
 
-#start_random {
-    width: 200px;
-    height: 50px;
+.control {
+    width: fit-content;
+    margin: 5px;
+}
+
+.big_button {
+    width: 100px;
+    height: 40px;
 }
 
 #textbox {

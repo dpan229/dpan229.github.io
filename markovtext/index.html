@@ -24,8 +24,9 @@
                     <span class="setting">
                         <label for="node_text_select">Node text:</label>
                         <select name="node_text" id="node_text_select">
-                            <option value="last_elem">Last element</option>
                             <option value="whole_context">Whole context</option>
+                            <option value="last_elem">Last element</option>
+                            <option value="none">None</option>
                         </select>
                     </span>
                 </div>
@@ -64,10 +65,18 @@
                     <label for="context_size_slider" id="context_size_label">Context window: 3 characters</label>
                 </span>
             </div>
-            <div class="control">
-                <button id="start_random">Generate random output</button>
-            </div>
             <span class="section_header"><b>Output text</b></span>
+            <div class="control_group">
+                <div class="control">
+                    <button class="big_button" id="start_random">Play</button>
+                </div>
+                <div class="control">
+                    <button class="big_button" id="step_random">Step</button>
+                </div>
+                <div class="control">
+                    <button class="big_button" id="reset_random">Reset</button>
+                </div>
+            </div>
             <div id="output"></div>
             <div class="settings_container">
                 <span class="settings_header">Output settings:</span>

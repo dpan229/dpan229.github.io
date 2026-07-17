@@ -41,7 +41,7 @@ markov_canvas.addEventListener("mousedown", function (e) {
     const world_y = mouse_y / scale + y0;
     const node = world.closest_node(world_x, world_y);
     dragging_node = node;
-    if (!generating) {
+    if (!playing) {
         world.set_focus(node);
     }
     mouse_down = true;
@@ -119,6 +119,31 @@ class Node {
     orphaned() {
         return this.primary_connections.size == 0 && this.secondary_connections.size == 0;
     }
+
+    /**
+     * Returns a random primary connection of this node.
+     * The probability for each node is proportional to the
+     * corresponding connection's count.
+     * 
+     * If this node has no primary connections, returns null.
+     * @returns The new focus if applicable, otherwise null
+     */
+    random_step() {
+        if (this.primary_connections.size == 0) {
+            return null;
+        }
+        let count_sum = 0;
+        for (const count of this.primary_connections.values()) {
+            count_sum += count;
+        }
+        let i = Math.floor(Math.random() * count_sum);
+        for (const [node, count] of this.primary_connections) {
+            i -= count;
+            if (i < 0) {
+                return node;
+            }
+        }
+    }
 }
 
 class MarkovWorld {
@@ -138,7 +163,7 @@ class MarkovWorld {
         this.forward_depth = new Map();
         this.reverse_depth = new Map();
 
-        this.label_mode = 0;
+        this.label_mode = 2;
 
         this.damping = 0.995;
     }
@@ -149,10 +174,15 @@ class MarkovWorld {
 
     get_label(context) {
         switch (this.label_mode) {
+            case 2:
+                // whole context
+                return clean_text(context);
             case 1:
-                return context;
+                // last element
+                return clean_text(this.get_last_element(context));
             default:
-                return this.get_last_element(context);
+                // nothing
+                return "";
         }
     }
 
@@ -292,33 +322,44 @@ class MarkovWorld {
 
         focus_header.textContent = clean_text(node.context);
 
-        const sorted_lefts = [...node.secondary_connections.entries()].sort((a, b) => b[1] - a[1]);
-        const lefts = [];
-        const postcontext = escape_text(node.static_label ? node.label : this.get_last_element(node.context));
-        let total_occurances = 0;
-        sorted_lefts.forEach(kv => {
-            const [node2, count] = kv;
-            total_occurances += count;
-            lefts.push(`<strong>${escape_text(node2.context)}</strong>${this.sep}${postcontext} <b>${count}</b>`);
-        });
-        focus_left.innerHTML = lefts.join("<br>");
-        focus_header_count.textContent = `Occurances: ${Math.max(1, total_occurances)}`;
-
-        let precontext;
-        if (node.static_label) {
-            precontext = escape_text(node.label);
-        } else if (node.context.length < this.context_size) {
-            precontext = "";
+        if (node.secondary_connections.size > 0) {
+            const sorted_lefts = [...node.secondary_connections.entries()].sort((a, b) => b[1] - a[1]);
+            const left_num_length = Math.ceil(Math.log10(sorted_lefts[0][1] + 1));
+            const lefts = [];
+            const postcontext = escape_text(node.static_label ? node.label : this.get_last_element(node.context));
+            let total_occurrences = 0;
+            sorted_lefts.forEach(kv => {
+                const [node2, count] = kv;
+                total_occurrences += count;
+                lefts.push(`<strong>${escape_text(node2.context)}</strong>${this.sep}${postcontext} <b>${count.toString().padStart(left_num_length)}</b>`);
+            });
+            focus_left.innerHTML = lefts.join("<br>");
+            focus_header_count.textContent = `Occurrences: ${total_occurrences}`;
         } else {
-            precontext = escape_text(node.context.split(this.sep)[0]);
+            focus_left.innerHTML = "";
+            focus_header_count.textContent = `Occurrences: 1`;
         }
-        const sorted_rights = [...node.primary_connections.entries()].sort((a, b) => b[1] - a[1]);
-        const rights = [];
-        sorted_rights.forEach(kv => {
-            const [node2, count] = kv;
-            rights.push(`<b>${count}</b> ${precontext}${this.sep}<strong>${escape_text(node2.context)}</strong>`);
-        });
-        focus_right.innerHTML = rights.join("<br>");
+
+        if (node.primary_connections.size > 0) {
+            let precontext;
+            if (node.static_label) {
+                precontext = escape_text(node.label);
+            } else if (node.context.length < this.context_size) {
+                precontext = "";
+            } else {
+                precontext = escape_text(node.context.split(this.sep)[0]);
+            }
+            const sorted_rights = [...node.primary_connections.entries()].sort((a, b) => b[1] - a[1]);
+            const right_num_length = Math.ceil(Math.log10(sorted_rights[0][1] + 1));
+            const rights = [];
+            sorted_rights.forEach(kv => {
+                const [node2, count] = kv;
+                rights.push(`<b>${count.toString().padEnd(right_num_length)}</b> ${precontext}${this.sep}<strong>${escape_text(node2.context)}</strong>`);
+            });
+            focus_right.innerHTML = rights.join("<br>");
+        } else {
+            focus_right.innerHTML = "";
+        }
 
         this.forward_depth.clear();
         let search = [node];
@@ -358,38 +399,6 @@ class MarkovWorld {
 
         // const highlight = `<span style="background-color: lightskyblue;">${node.context}</span>`
         // textbox.innerHTML = textbox.innerText.replaceAll(node.context, highlight);
-    }
-
-    /**
-     * Move focus to a random primary connection of the current focus.
-     * The probability of moving to each node is proportional to the
-     * corresponding connection's count. Returns the new focus.
-     * 
-     * If current focus has no primary connections, instead clears
-     * focus and returns null. If there is no current focus, does
-     * nothing and returns null.
-     * @returns The new focus if applicable, otherwise null
-     */
-    random_step_focus() {
-        if (this.focus !== null) {
-            if (this.focus.primary_connections.size == 0) {
-                this.clear_focus();
-                return null;
-            }
-            let count_sum = 0;
-            for (const count of this.focus.primary_connections.values()) {
-                count_sum += count;
-            }
-            let i = Math.floor(Math.random() * count_sum);
-            for (const [node, count] of this.focus.primary_connections) {
-                i -= count;
-                if (i < 0) {
-                    this.set_focus(node);
-                    return node;
-                }
-            }
-        }
-        return null;
     }
 
     clear_focus() {
@@ -641,13 +650,16 @@ physics_checkbox.addEventListener("change", function (e) {
 const node_label_select = document.getElementById("node_text_select");
 node_label_select.addEventListener("change", function () {
     switch (node_label_select.value) {
-        case "last_elem":
-            world.set_label_mode(0);
-            break;
-    
         case "whole_context":
-            world.set_label_mode(1);
+            world.set_label_mode(2);
             break
+
+        case "last_elem":
+            world.set_label_mode(1);
+            break;
+
+        case "none":
+            world.set_label_mode(0);
 
         default:
             break;
@@ -695,6 +707,7 @@ context_size_slider.oninput = function () {
     const v = parseInt(this.value);
     world.set_context_size(v);
     context_size_label.innerHTML = `Context window: ${v} ${get_unit_text()}`;
+    reset_generation();
 };
 
 // set up element type control
@@ -713,24 +726,67 @@ elem_select.addEventListener("change", function () {
             break;
     }
     context_size_label.innerHTML = `Context window: ${world.context_size} ${get_unit_text()}`;
+    reset_generation();
 });
 
 // set up generate button
-const generate_button = document.getElementById("start_random");
-let generating = false;
+const play_button = document.getElementById("start_random");
+const step_button = document.getElementById("step_random");
+let playing = false;
+let generation_ended = false;
+let generate_node = null;
 const output_box = document.getElementById("output");
 let output = "";
-generate_button.addEventListener("click", function() {
-    if (generating) {
-        generating = false;
-        generate_button.innerHTML = "Generate random output";
+function generate_step() {
+    // add next element to generation
+    if (generate_node === null && !generation_ended) {
+        generate_node = world.get_node("<START>");
     } else {
-        generating = true;
-        generate_button.innerHTML = "Stop generating";
-        world.focus = world.get_node("<START>");
-        output = "";
-        generate_cooldown = 0;
+        generate_node = generate_node.random_step();
     }
+
+    if (generate_node === null) {
+        // reached end node, generation finished
+        play_button.innerHTML = "Play";
+        playing = false;
+        generation_ended = true;
+        play_button.disabled = true;
+        step_button.disabled = true;
+    } else {
+        world.set_focus(generate_node);
+        if (!generate_node.static_label) {
+            output = output.concat(world.sep.concat(
+                world.get_last_element(generate_node.context)
+            ));
+        }
+        output_box.innerText = output;
+    }
+}
+function reset_generation() {
+    generation_ended = false;
+    generate_node = null;
+    output = "";
+    output_box.innerText = "";
+    generate_cooldown = 0;
+    play_button.disabled = false;
+    step_button.disabled = false;
+}
+play_button.addEventListener("click", function() {
+    if (playing) {
+        playing = false;
+        play_button.textContent = "Play";
+    } else if (!generation_ended) {
+        playing = true;
+        play_button.textContent = "Pause";
+    }
+});
+step_button.addEventListener("click", function (e) {
+    if (!playing) {
+        generate_step();
+    }
+});
+document.getElementById("reset_random").addEventListener("click", function (e) {
+    reset_generation();
 });
 
 // set up generate speed control
@@ -741,7 +797,6 @@ const generate_slider_label = document.getElementById("random_speed_label");
 generate_slider.oninput = function () {
     const v = parseInt(this.value);
     generate_max_cooldown = v;
-    generate_cooldown = v;
     generate_slider_label.innerHTML = `Wait frames: ${v}`;
 }
 
@@ -753,28 +808,17 @@ world.set_text("");
 const textbox = document.getElementById("textbox");
 textbox.addEventListener("input", function () {
     world.set_text(textbox.innerText);
+    reset_generation();
 });
 world.set_text(textbox.innerText);
 
 function animate() {
-
-    if (generating) {
-        if (generate_cooldown <= 0) {
-            // add next element to generation
-            node = world.random_step_focus();
-            if (node === null) {
-                // reached end node, generation finished
-                generate_button.innerHTML = "Generate random output";
-                generating = false;
-            } else {
-                output = output.concat(world.sep.concat(
-                    node.static_label ? node.label : world.get_last_element(node.context)
-                ));
-                output_box.innerText = output;
-            }
-            generate_cooldown = generate_max_cooldown;
+    if (playing) {
+        if (generate_cooldown >= generate_max_cooldown) {
+            generate_step();
+            generate_cooldown = 0;
         } else {
-            generate_cooldown--;
+            generate_cooldown++;
         }
     }
 
