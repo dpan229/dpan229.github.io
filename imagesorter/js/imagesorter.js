@@ -693,6 +693,9 @@ interact_canvas.addEventListener("pointermove", function (e) {
 interact_canvas.addEventListener("pointerleave", function (e) {
     interact_ctx.clearRect(0, 0, interact_canvas.width, interact_canvas.height);
 });
+interact_canvas.addEventListener("pointercancel", function (e) {
+    interact_ctx.clearRect(0, 0, interact_canvas.width, interact_canvas.height);
+});
 
 // set up pixel count slider
 const pixel_count_slider = document.getElementById("pixel_count");
