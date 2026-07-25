@@ -42,7 +42,7 @@ markov_canvas.addEventListener("mousedown", function (e) {
     const node = world.closest_node(world_x, world_y);
     dragging_node = node;
     if (!playing) {
-        world.set_focus(node);
+        set_world_focus(node);
     }
     mouse_down = true;
 });
@@ -83,7 +83,11 @@ class Node {
         this.y = y;
         this.label = label;
         this.context = context;
-        this.static_label = static_label
+        // If static_label is true,
+        // label will not be updated when changing parsing settings
+        // and node will not add any text to generation when it is reached.
+        // This is used for <START> and <END> nodes
+        this.static_label = static_label;
 
         this.vx = 0.0;
         this.vy = 0.0;
@@ -320,47 +324,6 @@ class MarkovWorld {
     set_focus(node) {
         this.focus = node;
 
-        focus_header.textContent = clean_text(node.context);
-
-        if (node.secondary_connections.size > 0) {
-            const sorted_lefts = [...node.secondary_connections.entries()].sort((a, b) => b[1] - a[1]);
-            const left_num_length = Math.ceil(Math.log10(sorted_lefts[0][1] + 1));
-            const lefts = [];
-            const postcontext = escape_text(node.static_label ? node.label : this.get_last_element(node.context));
-            let total_occurrences = 0;
-            sorted_lefts.forEach(kv => {
-                const [node2, count] = kv;
-                total_occurrences += count;
-                lefts.push(`<strong>${escape_text(node2.context)}</strong>${this.sep}${postcontext} <b>${count.toString().padStart(left_num_length)}</b>`);
-            });
-            focus_left.innerHTML = lefts.join("<br>");
-            focus_header_count.textContent = `Occurrences: ${total_occurrences}`;
-        } else {
-            focus_left.innerHTML = "";
-            focus_header_count.textContent = `Occurrences: 1`;
-        }
-
-        if (node.primary_connections.size > 0) {
-            let precontext;
-            if (node.static_label) {
-                precontext = escape_text(node.label);
-            } else if (node.context.length < this.context_size) {
-                precontext = "";
-            } else {
-                precontext = escape_text(node.context.split(this.sep)[0]);
-            }
-            const sorted_rights = [...node.primary_connections.entries()].sort((a, b) => b[1] - a[1]);
-            const right_num_length = Math.ceil(Math.log10(sorted_rights[0][1] + 1));
-            const rights = [];
-            sorted_rights.forEach(kv => {
-                const [node2, count] = kv;
-                rights.push(`<b>${count.toString().padEnd(right_num_length)}</b> ${precontext}${this.sep}<strong>${escape_text(node2.context)}</strong>`);
-            });
-            focus_right.innerHTML = rights.join("<br>");
-        } else {
-            focus_right.innerHTML = "";
-        }
-
         this.forward_depth.clear();
         let search = [node];
         this.forward_depth.set(node, 0);
@@ -403,11 +366,6 @@ class MarkovWorld {
 
     clear_focus() {
         this.focus = null;
-
-        focus_header.textContent = "";
-        focus_header_count.textContent = "";
-        focus_left.innerHTML = "";
-        focus_right.innerHTML = "";
         this.forward_depth.clear();
         this.reverse_depth.clear();
     }
@@ -603,6 +561,86 @@ class MarkovWorld {
     }
 }
 
+// initialize world object
+const world = new MarkovWorld(800, 800, ctx);
+
+const context_click_nodes = [];
+
+function set_world_focus(node, set_focus_header=true) {
+    world.set_focus(node);
+    
+    clear_focus_info(set_focus_header);
+    context_click_nodes.length = 0;
+    if (set_focus_header) {
+        focus_header.textContent = clean_text(node.context);
+    }
+
+    if (node.secondary_connections.size > 0) {
+        const sorted_lefts = [...node.secondary_connections.entries()].sort((a, b) => b[1] - a[1]);
+        const left_num_length = Math.ceil(Math.log10(sorted_lefts[0][1] + 1));
+        const postcontext = escape_text(node.static_label ? node.label : world.get_last_element(node.context));
+        let total_occurrences = 0;
+        sorted_lefts.forEach(kv => {
+            const [node2, count] = kv;
+            total_occurrences += count;
+            const preceding_state_obj = document.createElement("div");
+            preceding_state_obj.classList.add("context_click");
+            preceding_state_obj.setAttribute("data-node-id", context_click_nodes.length);
+            context_click_nodes.push(node2);
+            preceding_state_obj.innerHTML = `<strong>${escape_text(node2.context)}</strong>${world.sep}${postcontext} <b>${count.toString().padStart(left_num_length)}</b>`;
+            focus_left.appendChild(preceding_state_obj);
+        });
+        focus_header_count.textContent = `Occurrences: ${total_occurrences}`;
+    } else {
+        // this will only happen for start node
+        focus_left.innerHTML = "";
+        focus_header_count.textContent = `Occurrences: 1`;
+    }
+
+    if (node.primary_connections.size > 0) {
+        let precontext;
+        if (node.static_label) {
+            precontext = escape_text(node.label);
+        } else if (node.context.length < world.context_size) {
+            precontext = "";
+        } else {
+            precontext = escape_text(node.context.split(world.sep)[0]);
+        }
+        const sorted_rights = [...node.primary_connections.entries()].sort((a, b) => b[1] - a[1]);
+        const right_num_length = Math.ceil(Math.log10(sorted_rights[0][1] + 1));
+        sorted_rights.forEach(kv => {
+            const [node2, count] = kv;
+            const following_state_obj = document.createElement("div");
+            following_state_obj.classList.add("context_click");
+            following_state_obj.setAttribute("data-node-id", context_click_nodes.length);
+            context_click_nodes.push(node2);
+            following_state_obj.innerHTML = `<b>${count.toString().padEnd(right_num_length)}</b> ${precontext}${world.sep}<strong>${escape_text(node2.context)}</strong>`;
+            focus_right.appendChild(following_state_obj);
+        });
+    } else {
+        focus_right.innerHTML = "";
+    }
+}
+
+function clear_focus_info(set_focus_header=true) {
+    if (set_focus_header) {
+        focus_header.textContent = "";
+        focus_header_count.textContent = "";
+    }
+    focus_left.innerHTML = "";
+    focus_right.innerHTML = "";
+}
+
+function clear_world_focus(set_focus_header=true) {
+    world.clear_focus();
+    clear_focus_info(set_focus_header);
+}
+
+function set_world_text(text) {
+    world.set_text(text);
+    clear_focus_info();
+}
+
 // set up display collapse control
 let display_visible = true;
 const display_container = document.getElementById("display_container");
@@ -682,6 +720,29 @@ markov_canvas.addEventListener("wheel", function (e) {
     scale = new_scale;
 });
 
+// set up editable focus text
+focus_header.addEventListener("input", function () {
+    const context = focus_header.innerText;
+    if (world.contexts.has(context)) {
+        set_world_focus(world.contexts.get(context), false);
+    } else {
+        clear_world_focus(false);
+        focus_header_count.innerText = `Occurrences: 0`;
+    }
+});
+
+// set up clickable preceding and following states
+for (const box of document.getElementsByClassName("scrollbox")) {
+    box.addEventListener("click", function (e) {
+        if (!playing) {
+            const node_id = e.target.getAttribute("data-node-id") ?? e.target.parentElement.getAttribute("data-node-id");
+            if (node_id !== null) {
+                set_world_focus(context_click_nodes[node_id]);
+            }
+        }
+    });
+}
+
 // get text for current context window units (either "character",
 // "characters", "word", or "words")
 function get_unit_text() {
@@ -705,6 +766,7 @@ const context_size_slider = document.getElementById("context_size_slider");
 const context_size_label = document.getElementById("context_size_label");
 context_size_slider.oninput = function () {
     const v = parseInt(this.value);
+    clear_focus_info();
     world.set_context_size(v);
     context_size_label.innerHTML = `Context window: ${v} ${get_unit_text()}`;
     reset_generation();
@@ -715,10 +777,12 @@ const elem_select = document.getElementById("elem_select");
 elem_select.addEventListener("change", function () {
     switch (elem_select.value) {
         case "characters":
+            clear_focus_info();
             world.set_sep("");
             break;
     
         case "words":
+            clear_focus_info();
             world.set_sep(" ");
             break
 
@@ -729,7 +793,7 @@ elem_select.addEventListener("change", function () {
     reset_generation();
 });
 
-// set up generate button
+// set up generate buttons
 const play_button = document.getElementById("start_random");
 const step_button = document.getElementById("step_random");
 let playing = false;
@@ -737,29 +801,45 @@ let generation_ended = false;
 let generate_node = null;
 const output_box = document.getElementById("output");
 let output = "";
+// add next element to generation
 function generate_step() {
-    // add next element to generation
-    if (generate_node === null && !generation_ended) {
-        generate_node = world.get_node("<START>");
-    } else {
-        generate_node = generate_node.random_step();
+    if (generation_ended) {
+        return;
     }
-
+    
     if (generate_node === null) {
-        // reached end node, generation finished
-        play_button.innerHTML = "Play";
-        playing = false;
-        generation_ended = true;
-        play_button.disabled = true;
-        step_button.disabled = true;
+        // beginning of generation
+        generate_node = world.get_node("<START>");
+        set_world_focus(generate_node);
     } else {
-        world.set_focus(generate_node);
-        if (!generate_node.static_label) {
-            output = output.concat(world.sep.concat(
-                world.get_last_element(generate_node.context)
-            ));
+        // continuing generation
+        // don't include separator after start node
+        const include_leading_sep = !generate_node.static_label;
+
+        generate_node = generate_node.random_step();
+
+        if (generate_node === null) {
+            // reached end node, generation finished
+            play_button.innerHTML = "Play";
+            playing = false;
+            generation_ended = true;
+            play_button.disabled = true;
+            step_button.disabled = true;
+        } else {
+            set_world_focus(generate_node);
+            if (!generate_node.static_label) {
+                if (include_leading_sep) {
+                    output = output.concat(world.sep.concat(
+                        world.get_last_element(generate_node.context)
+                    ));
+                } else {
+                    output = output.concat(
+                        world.get_last_element(generate_node.context)
+                    );
+                }
+            }
+            output_box.innerText = output;
         }
-        output_box.innerText = output;
     }
 }
 function reset_generation() {
@@ -800,17 +880,14 @@ generate_slider.oninput = function () {
     generate_slider_label.innerHTML = `Wait frames: ${v}`;
 }
 
-// initialize world object
-const world = new MarkovWorld(800, 800, ctx);
-world.set_text("");
-
 // set up link to editable text box
 const textbox = document.getElementById("textbox");
 textbox.addEventListener("input", function () {
-    world.set_text(textbox.innerText);
+    const text = textbox.innerText;
+    set_world_text(text == "\n" ? "" : textbox.innerText);
     reset_generation();
 });
-world.set_text(textbox.innerText);
+set_world_text(textbox.innerText);
 
 function animate() {
     if (playing) {
