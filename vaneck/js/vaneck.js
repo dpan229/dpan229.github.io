@@ -271,30 +271,38 @@ class VanEckApp {
 
 const app = new VanEckApp(1000, 500);
 
-// set up mouse controls
+// set up pointer controls
+// TODO: add multitouch support
 let mouse_down = false;
 let dragging = false;
-canvas.addEventListener("mousedown", function (e) {
+canvas.addEventListener("pointerdown", function (e) {
     mouse_down = true;
+    canvas.setPointerCapture(e.pointerId);
 });
-canvas.addEventListener("mouseup", function(e) {
+canvas.addEventListener("pointerup", function(e) {
     if (mouse_down && !dragging) {
         app.epic_zoom();
     }
     mouse_down = false;
     dragging = false;
+    canvas.releasePointerCapture(e.pointerId);
 });
-canvas.addEventListener("mouseleave", function(e) {
+canvas.addEventListener("pointercancel", function (e) {
     mouse_down = false;
     dragging = false;
-    app.deselect();
+    canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointerleave", function(e) {
+    if (!mouse_down) {
+        app.deselect();
+    }
 });
 
 let last_mouse_x = 0;
 let last_mouse_y = 0;
 let mouse_x = 0;
 let mouse_y = 0;
-canvas.addEventListener("mousemove", function (e) {
+canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
     last_mouse_x = mouse_x;
     last_mouse_y = mouse_y;
@@ -314,18 +322,21 @@ canvas.addEventListener("mousemove", function (e) {
     }
 });
 
-bar_canvas.addEventListener("mousedown", function (e) {
+bar_canvas.addEventListener("pointerdown", function (e) {
     mouse_down = true;
+    bar_canvas.setPointerCapture(e.pointerId);
 });
-bar_canvas.addEventListener("mouseup", function (e) {
+bar_canvas.addEventListener("pointerup", function (e) {
     mouse_down = false;
     dragging = false;
+    bar_canvas.releasePointerCapture(e.pointerId);
 });
-bar_canvas.addEventListener("mouseleave", function (e) {
+bar_canvas.addEventListener("pointercancel", function (e) {
     mouse_down = false;
     dragging = false;
+    bar_canvas.releasePointerCapture(e.pointerId);
 });
-bar_canvas.addEventListener("mousemove", function (e) {
+bar_canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = bar_canvas.getBoundingClientRect();
     last_mouse_x = mouse_x;
     last_mouse_y = mouse_y;
