@@ -314,113 +314,183 @@ class VanEckApp {
 const app = new VanEckApp(1000, 500);
 
 // set up pointer controls
-// TODO: add multitouch support
-let mouse_down = false;
-let num_drag_events = 0;
-canvas.addEventListener("pointerdown", function (e) {
-    mouse_down = true;
-    const canvas_bounds = canvas.getBoundingClientRect();
-    last_mouse_x = mouse_x;
-    last_mouse_y = mouse_y;
-    mouse_x = Math.round(e.clientX - canvas_bounds.left);
-    mouse_y = Math.round(e.clientY - canvas_bounds.top);
-    if (!app.selection_held) {
-        set_selection_from_pointer();
+const active_pointers = new Map();
+function get_secondary_pointer(primary_pointer_id) {
+    for (const [pointer_id, pointer_props] of active_pointers.entries()) {
+        if (pointer_id != primary_pointer_id && pointer_props.down) {
+            return pointer_props;
+        }
     }
-    canvas.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener("pointerup", function(e) {
-    if (mouse_down && num_drag_events < 5) {
-        // trigger tap / click
-        app.toggle_hold_selection();
-        set_selection_from_pointer();
-    }
-    mouse_down = false;
-    num_drag_events = 0;
-    canvas.releasePointerCapture(e.pointerId);
-});
-canvas.addEventListener("pointercancel", function (e) {
-    mouse_down = false;
-    num_drag_events = 0;
-    canvas.releasePointerCapture(e.pointerId);
-});
-canvas.addEventListener("pointerleave", function(e) {
-    if (!mouse_down && !app.selection_held) {
-        app.deselect();
-    }
-});
-
-let last_mouse_x = 0;
-let last_mouse_y = 0;
-let mouse_x = 0;
-let mouse_y = 0;
-function set_selection_from_pointer() {
-    const i = Math.floor(app.get_i(mouse_x));
-    if (i < app.seq.length && mouse_y > app.height - app.scale * (app.seq[i] + 1)) {
+    return null;
+}
+function set_selection_from_pointer(x, y) {
+    const i = Math.floor(app.get_i(x));
+    if (i < app.seq.length && y > app.height - app.scale * (app.seq[i] + 1)) {
         app.select(i);
     } else {
         app.deselect();
     }
 }
-canvas.addEventListener("pointermove", function (e) {
+
+canvas.addEventListener("pointerdown", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
-    last_mouse_x = mouse_x;
-    last_mouse_y = mouse_y;
-    mouse_x = Math.round(e.clientX - canvas_bounds.left);
-    mouse_y = Math.round(e.clientY - canvas_bounds.top);
-    if (mouse_down) {
-        // dragging
-        if (num_drag_events > 0) {
-            app.snap_i0(app.i0 - (mouse_x - last_mouse_x) / app.scale);
-        }
-        num_drag_events++;
+    const x = Math.round(e.clientX - canvas_bounds.left);
+    const y = Math.round(e.clientY - canvas_bounds.top);
+    if (active_pointers.has(e.pointerId)) {
+        // update existing pointer
+        const props = active_pointers.get(e.pointerId);
+        props.start_x = x;
+        props.start_y = y;
+        props.x = x;
+        props.y = y;
+        props.down = true;
+    } else {
+        // new pointer
+        active_pointers.set(e.pointerId, {
+            start_x: x,
+            start_y: y,
+            x: x,
+            y: y,
+            down: true
+        });
     }
     if (!app.selection_held) {
-        set_selection_from_pointer();
+        set_selection_from_pointer(x, y);
+    }
+    canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointerup", function (e) {
+    if (active_pointers.has(e.pointerId)) {
+        const props = active_pointers.get(e.pointerId);
+        if (props.down && (props.x - props.start_x)**2 + (props.y - props.start_y)**2 < 25) {
+            // trigger tap / click
+            set_selection_from_pointer(props.x, props.y);
+            app.toggle_hold_selection();
+        }
+        active_pointers.delete(e.pointerId);
+        canvas.releasePointerCapture(e.pointerId);
+    }
+});
+canvas.addEventListener("pointercancel", function (e) {
+    active_pointers.delete(e.pointerId);
+    canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointerleave", function(e) {
+    if (active_pointers.has(e.pointerId)) {
+        const props = active_pointers.get(e.pointerId);
+        if (!props.down) {
+            active_pointers.delete(e.pointerId);
+        }
+        if (!props.down && !app.selection_held) {
+            app.deselect();
+        }
+    }
+});
+
+canvas.addEventListener("pointermove", function (e) {
+    const canvas_bounds = canvas.getBoundingClientRect();
+    const x = Math.round(e.clientX - canvas_bounds.left);
+    const y = Math.round(e.clientY - canvas_bounds.top);
+    if (active_pointers.has(e.pointerId)) {
+        const props = active_pointers.get(e.pointerId);
+        const last_x = props.x;
+        const last_y = props.y;
+        props.x = x;
+        props.y = y;
+        if (props.down) {
+            const secondary_props = get_secondary_pointer(e.pointerId);
+            if (secondary_props === null) {
+                // one finger / mouse dragging
+                app.snap_i0(app.i0 - (x - last_x) / app.scale);
+            } else if (x != last_x || y != last_y) {
+                // multiple pointers down: pinch zoom
+                const old_p_to_p_x = last_x - secondary_props.x;
+                const old_p_to_p_y = last_y - secondary_props.y;
+                const new_p_to_p_x = x - secondary_props.x;
+                const new_p_to_p_y = y - secondary_props.y;
+                const midpoint_x = ((last_x + x) / 2 + secondary_props.x) / 2;
+
+                const old_distance = Math.sqrt(
+                    old_p_to_p_x**2 + old_p_to_p_y**2
+                );
+                const new_distance = Math.sqrt(
+                    new_p_to_p_x**2 + new_p_to_p_y**2
+                );
+                const new_scale = app.scale * new_distance / old_distance;
+                app.snap_i0(app.i0 + secondary_props.x * (1/app.scale - 1/new_scale));
+                app.snap_scale(new_scale);
+            }
+        }
+    } else {
+        // new hovering pointer
+        active_pointers.set(e.pointerId, {
+            start_x: null,
+            start_y: null,
+            x: x,
+            y: y,
+            down: false
+        });
+    }
+    if (!app.selection_held) {
+        set_selection_from_pointer(x, y);
     }
 });
 
 // pointer events for bar canvas
+// not supporting multitouch on this
+let bar_canvas_pointer_x = null;
+let bar_canvas_dragging = false;
 bar_canvas.addEventListener("pointerdown", function (e) {
-    mouse_down = true;
+    const canvas_bounds = bar_canvas.getBoundingClientRect();
+    bar_canvas_pointer_x = Math.round(e.clientX - canvas_bounds.left);
+    bar_canvas_dragging = true;
     bar_canvas.setPointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointerup", function (e) {
-    mouse_down = false;
-    num_drag_events = 0;
+    bar_canvas_dragging = false;
     bar_canvas.releasePointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointercancel", function (e) {
-    mouse_down = false;
-    num_drag_events = 0;
+    bar_canvas_dragging = false;
     bar_canvas.releasePointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = bar_canvas.getBoundingClientRect();
-    last_mouse_x = mouse_x;
-    last_mouse_y = mouse_y;
-    mouse_x = Math.round(e.clientX - canvas_bounds.left);
-    mouse_y = Math.round(e.clientY - canvas_bounds.top);
-    if (mouse_down) {
-        if (num_drag_events > 0) {
-            app.snap_i0(app.i0 + (mouse_x - last_mouse_x) * (app.seq.length + 1) / app.width);
-        }
-        num_drag_events++;
+    const last_x = bar_canvas_pointer_x;
+    bar_canvas_pointer_x = Math.round(e.clientX - canvas_bounds.left);
+    if (bar_canvas_dragging) {
+        app.snap_i0(app.i0 + (bar_canvas_pointer_x - last_x) * (app.seq.length + 1) / app.width);
     }
 });
 
 // set up mouse wheel zooming
+function get_wheel_pointer_props() {
+    // return an arbitrary active pointer
+    for (const [pointer_id, pointer_props] of active_pointers) {
+        return pointer_props;
+    }
+    return null;
+}
 canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
+
     const old_scale = app.target_scale;
     app.snap_scale(app.scale * 1.001**-e.deltaY);
-    app.snap_i0(app.i0 + mouse_x * (1 / old_scale - 1 / app.target_scale));
 
     // allow horizontal scrolling to pan the view
     app.snap_i0(app.i0 + e.deltaX / app.scale);
 
-    if (!app.selection_held) {
-        set_selection_from_pointer();
+    const props = get_wheel_pointer_props();
+    if (props !== null) {
+        // move to keep mouse x at same position after zoom
+        app.snap_i0(app.i0 + props.x * (1 / old_scale - 1 / app.target_scale));
+
+        if (!app.selection_held) {
+            set_selection_from_pointer(props.x, props.y);
+        }
+    } else {
+        // if no pointers active, center zoom on center of canvas
+        app.snap_i0(app.i0 + app.width / 2 * (1 / old_scale - 1 / app.target_scale));
     }
 });
 
