@@ -2,6 +2,7 @@ canvas {
     display: block;
     margin: 0 auto;
     border: 1px solid black;
+    touch-action: none;
 }
 
 .control_container {

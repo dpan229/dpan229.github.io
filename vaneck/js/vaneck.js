@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 
 const bar_canvas = document.getElementById("barCanvas");
 const bar_ctx = bar_canvas.getContext("2d");
+const bar_canvas_height = bar_canvas.height;
 
 function random_color() {
     return { 
@@ -36,8 +37,10 @@ class VanEckApp {
         }
         this.colors = new Map();
         this.selected = null;
+        this.selection_held = false;
 
         this.bar_highlight = [];
+        this.highlight_num = null;
 
         this.update();
     }
@@ -80,37 +83,54 @@ class VanEckApp {
         return screen_x / this.scale + this.i0;
     }
 
+    add_to_sequence(n) {
+        this.seq.push(n);
+        if (n == this.highlight_num) {
+            this.bar_highlight.push(this.seq.length - 1);
+        }
+    }
+
     next() {
         const v = this.seq.at(-1);
         for (let i = this.seq.length - 2; i >= 0; i--) {
             if (this.seq[i] == v) {
                 const n = this.seq.length - i - 1;
-                this.seq.push(n);
+                this.add_to_sequence(n);
                 return n;
             }
         }
-        this.seq.push(0);
+        this.add_to_sequence(0);
         return 0;
     }
 
     select(i) {
         this.selected = i;
         if (i >= this.seed_length) {
-            const n = this.seq[i - 1];
             this.bar_highlight = [];
+            this.highlight_num = this.seq[i - 1];
             for (let j = 0; j < this.seq.length; j++) {
-                if (this.seq[j] == n) {
+                if (this.seq[j] == this.highlight_num) {
                     this.bar_highlight.push(j);
                 }
             }
         } else {
             this.bar_highlight = [];
+            this.highlight_num = null;
         }
     }
 
     deselect() {
         this.selected = null;
+        this.selection_held = false;
         this.bar_highlight = [];
+    }
+
+    toggle_hold_selection() {
+        if (this.selection_held) {
+            this.selection_held = false;
+        } else if (this.selected !== null) {
+            this.selection_held = true;
+        }
     }
 
     get_color(n) {
@@ -124,14 +144,19 @@ class VanEckApp {
     } 
 
     update() {
+        // update view parameters
         this.scale = 1 / (1/this.scale + 0.05 * (1/this.target_scale - 1/this.scale))
         this.i0 += 0.05 * (this.target_i0 - this.i0);
+
+        // lock view to current sequence length
         // this.target_i0 = Math.min(this.seq.length - 1, Math.max(0, this.target_i0));
         // this.i0 = Math.min(this.seq.length - 1, Math.max(0, this.i0));
         // this.target_scale = Math.min(this.height, Math.max(1, this.scale));
         // this.scale = Math.min(this.height, Math.max(1, this.scale));
-        const maxI = Math.floor(this.get_i(this.width));
-        while (this.seq.length <= maxI) {
+
+        // extend sequence
+        const new_length = Math.floor(this.get_i(this.width));
+        while (this.seq.length <= new_length) {
             this.next();
         }
     }
@@ -156,14 +181,15 @@ class VanEckApp {
         const rightEdgeI = this.get_i(this.width);
         const maxI = Math.min(this.seq.length - 1, Math.floor(rightEdgeI));
         for (let i = minI; i <= maxI; i++) {
-            // draw square
             const n = this.seq[i];
             const x0 = this.get_screen_x(i);
             const y0 = this.height - this.scale;
             const color = this.get_color(n);
             ctx.fillStyle = color;
+            // draw bar
             ctx.globalAlpha = 0.5;
             ctx.fillRect(x0, y0 - this.scale * n, this.scale, this.scale * n);
+            // draw bottom square
             ctx.globalAlpha = 1;
             ctx.fillRect(x0, y0, this.scale, this.scale);
 
@@ -184,17 +210,22 @@ class VanEckApp {
         // draw bottom bar
         const start_frac = this.i0 / (this.seq.length + 1);
         const end_frac = rightEdgeI / (this.seq.length + 1);
+        // draw background
         bar_ctx.fillStyle = "#c5c5c5";
-        bar_ctx.fillRect(0, 0, this.width, 10);
+        bar_ctx.fillRect(0, 0, this.width, bar_canvas_height);
+        // draw blue view highlight
         bar_ctx.fillStyle = "#4d8eff";
-        bar_ctx.fillRect(start_frac * this.width, 0, (end_frac - start_frac) * this.width, 10);
+        bar_ctx.fillRect(start_frac * this.width, 0, (end_frac - start_frac) * this.width, bar_canvas_height);
 
+        // draw selection shapes
         if (this.selected !== null) {
             const n = this.seq[this.selected];
             if (this.selected >= this.seed_length) {
-                // enable red glow
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = "red";
+                // enable red glow if selection is held
+                if (this.selection_held) {
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = "red";
+                }
                 if (n == 0) {
                     // draw selected circle when n = 0
                     const x = this.get_screen_x(this.selected - 0.5);
@@ -234,33 +265,44 @@ class VanEckApp {
             bar_ctx.globalAlpha = 0.5
             bar_ctx.fillStyle = "red";
             for (let i of this.bar_highlight) {
-                bar_ctx.fillRect(this.width * i / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
+                bar_ctx.fillRect(
+                    this.width * i / (this.seq.length + 1), 0, 
+                    Math.max(1, this.width / (this.seq.length + 1)), bar_canvas_height
+                );
             }
             bar_ctx.globalAlpha = 1;
             // draw connection in bar
             if (this.selected >= this.seed_length) {
-                bar_ctx.fillRect(this.width * (this.selected - 1 - n) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
-                bar_ctx.fillRect(this.width * (this.selected - 1) / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
+                bar_ctx.fillRect(
+                    this.width * (this.selected - 1 - n) / (this.seq.length + 1), 0, 
+                    this.width / (this.seq.length + 1), bar_canvas_height
+                );
+                bar_ctx.fillRect(
+                    this.width * (this.selected - 1) / (this.seq.length + 1), 0, 
+                    this.width / (this.seq.length + 1), bar_canvas_height
+                );
                 bar_ctx.strokeStyle = "red";
                 bar_ctx.beginPath();
-                bar_ctx.moveTo(this.width * (this.selected - n) / (this.seq.length + 1), 5);
-                bar_ctx.lineTo(this.width * (this.selected - 1) / (this.seq.length + 1), 5);
+                bar_ctx.moveTo(this.width * (this.selected - n) / (this.seq.length + 1), bar_canvas_height / 2);
+                bar_ctx.lineTo(this.width * (this.selected - 1) / (this.seq.length + 1), bar_canvas_height / 2);
                 bar_ctx.stroke();
             }
             // draw selected position in bar
             bar_ctx.fillStyle = "green";
-            bar_ctx.fillRect(this.width * this.selected / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), 10);
+            bar_ctx.fillRect(this.width * this.selected / (this.seq.length + 1), 0, this.width / (this.seq.length + 1), bar_canvas_height);
         }
 
         // draw bottom bar text
         bar_ctx.fillStyle = "#000000";
         bar_ctx.font = "10px monospace";
-        bar_ctx.textBaseline = "middle";
+        bar_ctx.textBaseline = "top";
         bar_ctx.textAlign = "right";
-        bar_ctx.fillText((this.i0 + 1).toFixed(0), start_frac * this.width, 5);
+        bar_ctx.fillText((this.i0 + 1).toFixed(0), start_frac * this.width, 0);
+        bar_ctx.textBaseline = "alphabetic";
         bar_ctx.textAlign = "left";
-        bar_ctx.fillText((rightEdgeI + 1).toFixed(0), end_frac * this.width, 5);
+        bar_ctx.fillText((rightEdgeI + 1).toFixed(0), end_frac * this.width, bar_canvas_height);
 
+        // draw "terms generated" text
         ctx.fillStyle = "#000000";
         ctx.font = "18px monospace";
         ctx.textBaseline = "top";
@@ -274,26 +316,36 @@ const app = new VanEckApp(1000, 500);
 // set up pointer controls
 // TODO: add multitouch support
 let mouse_down = false;
-let dragging = false;
+let num_drag_events = 0;
 canvas.addEventListener("pointerdown", function (e) {
     mouse_down = true;
+    const canvas_bounds = canvas.getBoundingClientRect();
+    last_mouse_x = mouse_x;
+    last_mouse_y = mouse_y;
+    mouse_x = Math.round(e.clientX - canvas_bounds.left);
+    mouse_y = Math.round(e.clientY - canvas_bounds.top);
+    if (!app.selection_held) {
+        set_selection_from_pointer();
+    }
     canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointerup", function(e) {
-    if (mouse_down && !dragging) {
-        app.epic_zoom();
+    if (mouse_down && num_drag_events < 5) {
+        // trigger tap / click
+        app.toggle_hold_selection();
+        set_selection_from_pointer();
     }
     mouse_down = false;
-    dragging = false;
+    num_drag_events = 0;
     canvas.releasePointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointercancel", function (e) {
     mouse_down = false;
-    dragging = false;
+    num_drag_events = 0;
     canvas.releasePointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointerleave", function(e) {
-    if (!mouse_down) {
+    if (!mouse_down && !app.selection_held) {
         app.deselect();
     }
 });
@@ -302,6 +354,14 @@ let last_mouse_x = 0;
 let last_mouse_y = 0;
 let mouse_x = 0;
 let mouse_y = 0;
+function set_selection_from_pointer() {
+    const i = Math.floor(app.get_i(mouse_x));
+    if (i < app.seq.length && mouse_y > app.height - app.scale * (app.seq[i] + 1)) {
+        app.select(i);
+    } else {
+        app.deselect();
+    }
+}
 canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
     last_mouse_x = mouse_x;
@@ -309,31 +369,30 @@ canvas.addEventListener("pointermove", function (e) {
     mouse_x = Math.round(e.clientX - canvas_bounds.left);
     mouse_y = Math.round(e.clientY - canvas_bounds.top);
     if (mouse_down) {
-        if (dragging) {
+        // dragging
+        if (num_drag_events > 0) {
             app.snap_i0(app.i0 - (mouse_x - last_mouse_x) / app.scale);
         }
-        dragging = true;
+        num_drag_events++;
     }
-    const i = Math.floor(app.get_i(mouse_x));
-    if (i < app.seq.length && mouse_y > app.height - app.scale * (app.seq[i] + 1)) {
-        app.select(i);
-    } else {
-        app.deselect();
+    if (!app.selection_held) {
+        set_selection_from_pointer();
     }
 });
 
+// pointer events for bar canvas
 bar_canvas.addEventListener("pointerdown", function (e) {
     mouse_down = true;
     bar_canvas.setPointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointerup", function (e) {
     mouse_down = false;
-    dragging = false;
+    num_drag_events = 0;
     bar_canvas.releasePointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointercancel", function (e) {
     mouse_down = false;
-    dragging = false;
+    num_drag_events = 0;
     bar_canvas.releasePointerCapture(e.pointerId);
 });
 bar_canvas.addEventListener("pointermove", function (e) {
@@ -343,10 +402,10 @@ bar_canvas.addEventListener("pointermove", function (e) {
     mouse_x = Math.round(e.clientX - canvas_bounds.left);
     mouse_y = Math.round(e.clientY - canvas_bounds.top);
     if (mouse_down) {
-        if (dragging) {
+        if (num_drag_events > 0) {
             app.snap_i0(app.i0 + (mouse_x - last_mouse_x) * (app.seq.length + 1) / app.width);
         }
-        dragging = true;
+        num_drag_events++;
     }
 });
 
@@ -357,12 +416,17 @@ canvas.addEventListener("wheel", function (e) {
     app.snap_scale(app.scale * 1.001**-e.deltaY);
     app.snap_i0(app.i0 + mouse_x * (1 / old_scale - 1 / app.target_scale));
 
-    app.slide_i0(app.i0 + 3 * e.deltaX / app.scale);
+    // allow horizontal scrolling to pan the view
+    app.snap_i0(app.i0 + e.deltaX / app.scale);
+
+    if (!app.selection_held) {
+        set_selection_from_pointer();
+    }
 });
 
 // set up responsive canvas sizing
 let canvas_width = 0;
-let canvas_height = 0
+let canvas_height = 0;
 function set_canvas_size() {
     canvas_width = 0.8 * window.innerWidth;
     canvas_height = 0.8 * window.innerHeight;
@@ -399,7 +463,7 @@ seed_button.addEventListener("click", function (e) {
 
 function animate() {
     ctx.clearRect(0, 0, canvas_width, canvas_height);
-    bar_ctx.clearRect(0, 0, canvas_width, 10);
+    bar_ctx.clearRect(0, 0, canvas_width, bar_canvas_height);
     app.update();
     app.draw(ctx, bar_ctx);
 
