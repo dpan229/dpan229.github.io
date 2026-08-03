@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Emoji Mosaic</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Emoji Mosaic</span>
+        <canvas id="main_canvas" width="500" height="500"></canvas>
+        <div class="control_container">
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="0" max="100" value="70" id="emoji_opacity">
+                    <br>
+                    <label for="emoji_opacity">Emoji opacity: <span id="emoji_opacity_text">70</span>%</label>
+                </div>
+            </div>
+        </div>
+        <div class="control_container" id="grid_settings">
+            <span class="container_heading">Grid settings</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="8" max="50" value="25" id="box_size">
+                    <br>
+                    <label for="box_size">Box size: <span id="box_size_text">25</span>px</label>
+                </div>
+                <div class="control">
+                    <input type="range" min="5" max="50" value="20" id="font_size">
+                    <br>
+                    <label for="font_size">Font size: <span id="font_size_text">20</span>px</label>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="-8" max="8" value="0" id="vertical_offset">
+                    <br>
+                    <label for="vertical_offset">Vertical offset: <span id="vertical_offset_text">0</span>px</label>
+                </div>
+                <div class="control">
+                    <input type="range" min="-8" max="8" value="0" id="horizontal_offset">
+                    <br>
+                    <label for="horizontal_offset">Horizontal offset: <span id="horizontal_offset_text">0</span>px</label>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <button id="go_button">Go</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="control_container" id="fit_display">
+            <div class="control_group">
+                <div class="control">
+                    <span>Subimage:</span>
+                    <br>
+                    <canvas id="box_canvas" width="25" height="25"></canvas>
+                </div>
+                <div class="control">
+                    <span>Emoji:</span>
+                    <br>
+                    <canvas id="emoji_canvas" width="25" height="25"></canvas>
+                </div>
+            </div>
+        </div>
+        <script src="/js/include_html.js"></script>
+        <script src="js/emojimosaic.js"></script>
+    </body>
+</html>
