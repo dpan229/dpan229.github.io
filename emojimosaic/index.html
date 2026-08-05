@@ -8,7 +8,10 @@
     <body>
         <div id="header_placeholder"></div>
         <span class="main_header">Emoji Mosaic</span>
-        <canvas id="main_canvas" width="500" height="500"></canvas>
+        <div class="canvas_container" id="main_canvas_container">
+            <canvas class="layer_canvas" id="image_canvas" width="500" height="500"></canvas>
+            <canvas class="layer_canvas" id="top_canvas" width="500" height="500"></canvas>
+        </div>
         <div class="control_container">
             <div class="control_group">
                 <div class="control">
@@ -22,12 +25,17 @@
             <span class="container_heading">Grid settings</span>
             <div class="control_group">
                 <div class="control">
-                    <input type="range" min="8" max="50" value="25" id="box_size">
+                    <input type="file" id="image_input" accept="image/*">
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <input type="range" min="10" max="50" value="25" id="box_size">
                     <br>
                     <label for="box_size">Box size: <span id="box_size_text">25</span>px</label>
                 </div>
                 <div class="control">
-                    <input type="range" min="5" max="50" value="20" id="font_size">
+                    <input type="range" min="8" max="50" value="20" id="font_size">
                     <br>
                     <label for="font_size">Font size: <span id="font_size_text">20</span>px</label>
                 </div>
@@ -44,26 +52,36 @@
                     <label for="horizontal_offset">Horizontal offset: <span id="horizontal_offset_text">0</span>px</label>
                 </div>
             </div>
+            <span class="container_heading">Emoji categories</span>
             <div class="control_group">
                 <div class="control">
-                    <button id="go_button">Go</button>
+                    <input type="checkbox" id="people_checkbox" class="category_checkbox" data-category="PEOPLE" checked>
+                    <label for="people_checkbox">People</label>
                 </div>
+                <div class="control">
+                    <input type="checkbox" id="nature_checkbox" class="category_checkbox" data-category="NATURE" checked>
+                    <label for="nature_checkbox">Nature</label>
+                </div>
+                <div class="control">
+                    <input type="checkbox" id="food_checkbox" class="category_checkbox" data-category="FOOD" checked>
+                    <label for="food_checkbox">Food</label>
+                </div>
+            </div>
+            <span class="info" id="palette_count"></span>
+        </div>
+        <div class="control_group">
+            <div class="control">
+                <button id="go_button">Go</button>
             </div>
         </div>
 
-        <div class="control_container" id="fit_display">
-            <div class="control_group">
-                <div class="control">
-                    <span>Subimage:</span>
-                    <br>
-                    <canvas id="box_canvas" width="25" height="25"></canvas>
-                </div>
-                <div class="control">
-                    <span>Emoji:</span>
-                    <br>
-                    <canvas id="emoji_canvas" width="25" height="25"></canvas>
-                </div>
-            </div>
+        <div id="table_container">
+
+        </div>
+
+        <div class="control_container" id="output_container">
+            <span class="container_heading">Text Version:</span>
+            <div id="output_text"></div>
         </div>
         <script src="/js/include_html.js"></script>
         <script src="js/emojimosaic.js"></script>
