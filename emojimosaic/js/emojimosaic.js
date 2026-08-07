@@ -460,10 +460,6 @@ class EmojiMosaicApp {
                 const e_green = emoji_image_data[i + 1];
                 const e_blue = emoji_image_data[i + 2];
 
-                // other possible scoring strategies commented out
-                // const d2 = (e_red - b_red)**2 + (e_green - b_green)**2 + (e_blue - b_blue)**2;
-                // total += d2 < 1200 ? 0 : d2 < 10000 ? 1 : d2 < 40000 ? 2 : 3;
-
                 if (e_red == 255 && e_green == 255 && e_blue == 255) {
                     blank_pixels++;
                     if (blank_pixels > 95) {
@@ -472,9 +468,17 @@ class EmojiMosaicApp {
                         return Infinity;
                     }
                 } else {
-                    // manhattan distance between colors
-                    const dm = Math.abs(e_red - b_red) + Math.abs(e_green - b_green) + Math.abs(e_blue - b_blue);
-                    total += Math.sqrt(dm);
+                    // redmean color distance
+                    const rmean = (b_red + e_red) >> 1;
+                    const dr = b_red - e_red;
+                    const dg = b_green - e_green;
+                    const db = b_blue - e_blue;
+                    const d = Math.sqrt(
+                        (((512 + rmean) * dr * dr) >> 8) +
+                        (4 * dg * dg) +
+                        (((767 - rmean) * db * db) >> 8)
+                    );
+                    total += d;
                 }
             }
         }
@@ -702,7 +706,7 @@ function finished_click(e) {
     for (const score of scores) {
         const cell = document.createElement("td");
         cell.classList.add("score_table_cell");
-        cell.innerHTML = score.toFixed(2);
+        cell.innerHTML = score.toFixed(1);
         score_row.appendChild(cell);
     }
     table_container.appendChild(table);
