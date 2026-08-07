@@ -15,7 +15,7 @@ function unpack_ranges(range_list) {
     const out = [];
     for (const a of range_list) {
         if (a.length == 1) {
-            out.push(a);
+            out.push(a[0]);
         } else {
             for (let i = a[0]; i <= a[1]; i++) {
                 out.push(i);
@@ -31,14 +31,16 @@ const EMOJI_CATEGORIES = {
         [0x270a, 0x270d],             // raised fist - writing hand
         [0x1f440, 0x1f469],           // eyes - woman
         [0x1f46b, 0x1f487],           // man and woman - haircut
-        [0x1f4aa], [0x1f590], 
-        [0x1f595], [0x1f596],         // some hands
+        [0x1f4aa],                    // bicep
+        [0x1f574, 0x1f576],           // levatating businessman - sunglasses
+        [0x1f57a],                    // man dancing
+        [0x1f590], [0x1f595, 0x1f596],// some hands
+        [0x1f5e3],                    // speaking silhouette head
         [0x1f600, 0x1f647],           // grinning face - bowing
         [0x1f64b, 0x1f64f],           // raising hand - folded hands
-        [0x1f6b4, 0x1f6b6],           // bicyclist - pedestrian
+        [0x1f6b6],                    // pedestrian
         [0x1f90c],                    // che voi hand
-        [0x1f90f, 0x1f93a],           // pinch - fencer
-        [0x1f93c, 0x1f93e],           // wrestlers - handball
+        [0x1f90f, 0x1f937],           // pinch - shrug
         [0x1f970, 0x1f97f],           // face with hearts - flat shoe
         [0x1f9b4, 0x1f9bf],           // bone - mechanical leg
         [0x1f9cc, 0x1f9e0],           // troll - brain
@@ -46,16 +48,18 @@ const EMOJI_CATEGORIES = {
         [0x1fa70, 0x1fa74],           // ballet shoes - sandal
         [0x1fac0, 0x1fac6],           // heart - fingerprint
         [0x1fae0, 0x1fae6],           // melting face - biting lip
-        [0x1fae8, 0x1fae9],           // shaking face - face with bags
+        [0x1fae8, 0x1faea],           // shaking face - distorted face
         [0x1faf0, 0x1faf8]            // hand making heart with fingers - hand pushing right
     ]),
     NATURE: unpack_ranges([
         [0x2600, 0x2604],             // sun - comet
-        [0x2614],                     // umbrella with rain
+        [0x2614], [0x2618],           // umbrella with rain, clover
         [0x26c4], [0x26c5], [0x26c8], // snowman, cloudy, thunderstorm
         [0x1f300, 0x1f320],           // cyclone - shooting star
         [0x1f324, 0x1f32c],           // partly cloudy - wind blowing face
         [0x1f400, 0x1f43f],           // rat - chipmunk
+        [0x1f54a],                    // dove
+        [0x1f577, 0x1f578],           // spider, spider web
         [0x1f648, 0x1f64a],           // monkeys
         [0x1f980, 0x1f9ae],           // crab - guide dog
         [0x1fab0, 0x1fabf],           // fly - goose
@@ -70,6 +74,80 @@ const EMOJI_CATEGORIES = {
         [0x1f950, 0x1f96f],           // croissant - bagel
         [0x1f9c0, 0x1f9cb],           // cheese - bubble tea
         [0x1fad0, 0x1fadc]            // blueberries - root vegetable
+    ]),
+    OBJECTS: unpack_ranges([
+        [0x231a, 0x231b],             // watch, hourglass
+        [0x23f0, 0x23f3],             // alarm clock - hourglass
+        [0x260e],                     // telephone
+        [0x265f],                     // chess pawn
+        [0x2692, 0x2697],             // hammer and pick - alembic
+        [0x2699],                     // gear
+        [0x26b0, 0x26b1],             // coffin, urn
+        [0x26cf], [0x26d1], [0x26d3], // pickaxe, helmet, chains
+        [0x2702], [0x2709], [0x270f], // scissors, envelope, pencil
+        [0x2712], [0x2744],           // pen, snowflake
+        [0x1f004], [0x1f0cf],         // mahjong dragon, joker card
+        [0x1f321],                    // thermometer
+        [0x1f380, 0x1f384],           // ribbon - christmas tree
+        [0x1f386, 0x1f38a],           // fireworks - confetti ball
+        [0x1f38e, 0x1f390],           // japanese dolls - wind chime
+        [0x1f392, 0x1f393],           // backpack, graduation cap
+        [0x1f396, 0x1f397],           // medal, reminder ribbon
+        [0x1f399, 0x1f39b],           // microphone - soundboard
+        [0x1f39e, 0x1f3a5],           // film frames - movie camera
+        [0x1f3a7, 0x1f3bc],           // headphones - music score
+        [0x1f3f7], [0x1f3fa],         // label, amphora
+        [0x1f488, 0x1f492],           // barber pole - wedding
+        [0x1f4a1], [0x1f4a3],         // light bulb, bomb
+        [0x1f4b0], [0x1f4b3, 0x1f4f2],// money bag, credit card - phone with arrow
+        [0x1f4f7, 0x1f4fd],           // camera - film projector
+        [0x1f4ff],                    // prayer beads
+        [0x1f50b, 0x1f517],           // battery - link
+        [0x1f525, 0x1f52e],           // fire - crystal ball
+        [0x1f531],                    // trident
+        [0x1f56f, 0x1f570],           // candle, mantlepiece clock
+        [0x1f573], [0x1f579],         // hole, joystick
+        [0x1f587], [0x1f58a, 0x1f58d],// paperclips, ballpoint pen - crayon
+        [0x1f5a5], [0x1f5a8],         // desktop computer, printer
+        [0x1f5b1, 0x1f5b2],           // computer mouse, trackball
+        [0x1f5bc],                    // painting
+        [0x1f5c2, 0x1f5c4],           // card index dividers - filing cabinet
+        [0x1f5d1, 0x1f5d3],           // trash can - calendar
+        [0x1f5dc, 0x1f5de],           // vice - newspaper
+        [0x1f5e1], [0x1f5f3],         // dagger, ballot box
+        [0x1f6aa], [0x1f6ac],         // door, cigarette
+        [0x1f6bd], [0x1f6bf, 0x1f6c1],// shower - bathtub
+        [0x1f6cb, 0x1f6cf],           // sofa - bed
+
+        [0x1f6dd, 0x1f6e2],           // slide - oil drum
+        [0x1f93f, 0x1f944],           // diving mask - spoon
+        [0x1f9e7, 0x1f9ff],           // red envelope - nazar amulet
+        [0x1fa78, 0x1fa7c],           // blood - crutch
+        [0x1fa80, 0x1fa8a],           // yoyo - trombone
+        [0x1fa8e, 0x1faae],           // treasure chest - hair pick
+        [0x1fae7]                     // bubbles
+    ]),
+    TRAVELSPORTS: unpack_ranges([
+        [0x26bd, 0x26be],             // soccer ball, baseball
+        [0x26e9, 0x26ea],             // shinto shrine, church
+        [0x26f0, 0x26f5],             // mountain - sailboat
+        [0x26f7, 0x26fa],             // skier - tent
+        [0x26fd], [0x2708],           // fuel pump, airplane
+        [0x1f38b, 0x1f38d],           // tanabata tree - pine decoration
+        [0x1f3be, 0x1f3e6],           // tennis racket - bank
+        [0x1f3e8, 0x1f3f0],           // hotel - castle
+        [0x1f3f8, 0x1f3f9],           // badminton, bow and arrow
+        [0x1f54b, 0x1f54d],           // kaaba - synagogue
+        [0x1f5fa, 0x1f5ff],           // map - stone head
+        [0x1f680, 0x1f689],           // rocket - triangular flag
+        [0x1f6b2], [0x1f6b4, 0x1f6b5],// bicycle, cyclist, mountain cyclist
+        [0x1f6d1, 0x1f6d2],           // stop sign, shopping cart
+        [0x1f6d5, 0x1f6d6],           // hindu temple, hut
+        [0x1f6e3, 0x1f6e5],           // highway - motorboat
+        [0x1f6e9], [0x1f6eb, 0x1f6ec],// small airplane, takeoff, landing
+        [0x1f6f0], [0x1f6f3, 0x1f6fc],// satellite, cruise ship - roller skates
+        [0x1f938, 0x1f93e],           // cartwheel - handball
+        [0x1f945, 0x1f94f]            // goal net - frisbee
     ]),
     SHAPES: unpack_ranges([
         [0x1f7e0, 0x1f7eb]
@@ -110,6 +188,8 @@ class EmojiMosaicApp {
         this.vertical_offset = vertical_offset;
         this.emoji_opacity = 0.7;
         this.background_color = "#ffffff";
+        this.highlight_x = -2;
+        this.highlight_y = -2;
 
         this.best_emojis = null;
         this.best_scores = null;
@@ -119,11 +199,11 @@ class EmojiMosaicApp {
     }
 
     /**
-     * Returns image data for scaled down emoji with current size 
+     * Returns pixel data for scaled down emoji with current size 
      * and positioning settings. Memoized for repeated calls with
      * same settings.
      * @param {Number} charcode Integer character code 
-     * @returns {ImageData}
+     * @returns {Uint8ClampedArray}
      */
     get_emoji_data(charcode) {
         if (this.emoji_data.has(charcode)) {
@@ -153,12 +233,12 @@ class EmojiMosaicApp {
     }
 
     /**
-     * Returns image data for scaled down image slice in row
+     * Returns pixel data for scaled down image slice in row
      * `y`, column `x`. Memoized for repeated calls with same
      * settings.
      * @param {Number} x Column number
      * @param {Number} y Row number
-     * @returns {ImageData}
+     * @returns {Uint8ClampedArray}
      */
     get_box_data(x, y) {
         const id = y * this.columns + x;
@@ -263,12 +343,15 @@ class EmojiMosaicApp {
         this.running_x = 0;
         this.running_y = 0;
         this.running_emoji_index = 0;
+        this.highlight_x = -2;
+        this.highlight_y = -2;
         this.draw();
     }
 
     draw() {
         const ctx = this.top_ctx;
         ctx.reset();
+
         // draw grid
         if (this.state < 2) {
             ctx.lineWidth = 1;
@@ -288,15 +371,18 @@ class EmojiMosaicApp {
             }
             ctx.stroke();
         }
-        // draw emojis
-        ctx.font = `${this.font_size}px monospace`;
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";
+
         ctx.globalAlpha = this.emoji_opacity;
+        // draw background if in finished state
         if (this.state == 2) {
             ctx.fillStyle = this.background_color;
             ctx.fillRect(0, 0, this.width, this.height);
         }
+
+        // draw emojis
+        ctx.font = `${this.font_size}px monospace`;
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
         if (this.state == 0) {
             // fill with sunglasses emoji
             for (let y = 0; y < this.rows; y++) {
@@ -321,7 +407,16 @@ class EmojiMosaicApp {
                 }
             }
         }
+
+        // draw single box highlight
         ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#9999FF";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+            this.highlight_x * this.box_width,
+            this.highlight_y * this.box_height,
+            this.box_width, this.box_height
+        );
     }
 
     start_mosaic() {
@@ -370,7 +465,6 @@ class EmojiMosaicApp {
                 // total += d2 < 1200 ? 0 : d2 < 10000 ? 1 : d2 < 40000 ? 2 : 3;
 
                 if (e_red == 255 && e_green == 255 && e_blue == 255) {
-                    // total += 15;
                     blank_pixels++;
                     if (blank_pixels > 95) {
                         // emoji probably can't be displayed in this environment
@@ -527,42 +621,62 @@ set_categories();
 // set up go button
 document.getElementById("go_button").addEventListener("click", function (e) {
     if (app.state == 0) {
-        // go
-        app.start_mosaic();
-        grid_settings_container.style.display = "none";
-        go_button.textContent = "Stop";
-        animate();
+        if (app.emoji_list.length > 0) {
+            // go
+            app.start_mosaic();
+            grid_settings_container.style.display = "none";
+            go_button.textContent = "Stop";
+            animate();
+        }
     } else {
         // stop / reset
         app.reset();
         table_container.innerHTML = "";
-        grid_settings_container.style.display = "";
-        top_canvas.removeEventListener("pointerdown", show_best);
+        grid_settings_container.style.display = "block";
+        click_info_container.style.display = "none";
+        top_canvas.removeEventListener("pointerdown", finished_click);
         output_textbox.innerText = "";
         go_button.textContent = "Go";
     }
 });
 
+const click_info_container = document.getElementById("click_info");
+const click_info_transfer_canvas = new OffscreenCanvas(10, 10);
+const click_info_transfer_ctx = click_info_transfer_canvas.getContext("2d");
+const click_info_canvas = document.getElementById("click_info_canvas");
+const click_info_ctx = click_info_canvas.getContext("2d");
+click_info_ctx.imageSmoothingEnabled = false;
 const table_container = document.getElementById("table_container");
-function show_best(e) {
+function finished_click(e) {
     // get row and column of clicked cell
     const canvas_bounds = top_canvas.getBoundingClientRect();
     const x = Math.round(e.clientX - canvas_bounds.left);
     const y = Math.round(e.clientY - canvas_bounds.top);
     const row = Math.floor(y / app.box_height);
     const column = Math.floor(x / app.box_width);
+    if (row < 0 || column < 0 || row >= app.rows || column >= app.columns) {
+        return;
+    }
+
+    click_info_container.style.display = "block";
+
+    // set highlight
+    app.highlight_x = column;
+    app.highlight_y = row;
+    app.draw();
     
+    // show image box
+    const box_data = app.get_box_data(column, row);
+    const box_image_data = new ImageData(box_data, 10, 10);
+    click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
+    click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 50, 50);
+
     // get top emojis and scores
     const emojis = app.best_emojis[row][column];
     const scores = app.best_scores[row][column];
 
     // make table
     table_container.innerHTML = "";
-
-    const heading = document.createElement("span");
-    heading.classList.add("container_heading");
-    heading.innerHTML = "Best emojis for selected position";
-    table_container.appendChild(heading);
 
     const table = document.createElement("table");
     
@@ -613,6 +727,6 @@ function animate() {
         output_textbox.innerText = emoji_text;
         console.log(emoji_text);
         go_button.textContent = "Reset";
-        top_canvas.addEventListener("pointerdown", show_best);
+        top_canvas.addEventListener("pointerdown", finished_click);
     }
 }

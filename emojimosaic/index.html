@@ -29,28 +29,40 @@
                 </div>
             </div>
             <div class="control_group">
-                <div class="control">
-                    <input type="range" min="10" max="50" value="25" id="box_size">
-                    <br>
-                    <label for="box_size">Box size: <span id="box_size_text">25</span>px</label>
-                </div>
-                <div class="control">
-                    <input type="range" min="8" max="50" value="20" id="font_size">
-                    <br>
-                    <label for="font_size">Font size: <span id="font_size_text">20</span>px</label>
-                </div>
-            </div>
-            <div class="control_group">
-                <div class="control">
-                    <input type="range" min="-8" max="8" value="0" id="vertical_offset">
-                    <br>
-                    <label for="vertical_offset">Vertical offset: <span id="vertical_offset_text">0</span>px</label>
-                </div>
-                <div class="control">
-                    <input type="range" min="-8" max="8" value="0" id="horizontal_offset">
-                    <br>
-                    <label for="horizontal_offset">Horizontal offset: <span id="horizontal_offset_text">0</span>px</label>
-                </div>
+                <table>
+                    <tr>
+                        <td class="wide_cell">
+                            <div class="control">
+                                <input type="range" min="10" max="50" value="25" id="box_size">
+                                <br>
+                                <label for="box_size">Box size: <span id="box_size_text">25</span>px</label>
+                            </div>
+                        </td>
+                        <td class="wide_cell">
+                            <div class="control">
+                                <input type="range" min="8" max="50" value="20" id="font_size">
+                                <br>
+                                <label for="font_size">Font size: <span id="font_size_text">20</span>px</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="wide_cell">
+                            <div class="control">
+                                <input type="range" min="-8" max="8" value="0" id="vertical_offset">
+                                <br>
+                                <label for="vertical_offset">Vertical offset: <span id="vertical_offset_text">0</span>px</label>
+                            </div>
+                        </td>
+                        <td class="wide_cell">
+                            <div class="control">
+                                <input type="range" min="-8" max="8" value="0" id="horizontal_offset">
+                                <br>
+                                <label for="horizontal_offset">Horizontal offset: <span id="horizontal_offset_text">0</span>px</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
             <span class="container_heading">Emoji categories</span>
             <div class="control_group">
@@ -66,17 +78,33 @@
                     <input type="checkbox" id="food_checkbox" class="category_checkbox" data-category="FOOD" checked>
                     <label for="food_checkbox">Food</label>
                 </div>
+                <div class="control">
+                    <input type="checkbox" id="objects_checkbox" class="category_checkbox" data-category="OBJECTS" checked>
+                    <label for="objects_checkbox">Objects</label>
+                </div>
+                <div class="control">
+                    <input type="checkbox" id="travel_checkbox" class="category_checkbox" data-category="TRAVELSPORTS" checked>
+                    <label for="travel_checkbox">Travel & Sports</label>
+                </div>
             </div>
             <span class="info" id="palette_count"></span>
         </div>
+
+        <div class="control_container" id="click_info">
+            <span class="container_heading">Selected box at comparison size:</span>
+            <div class="control_group">
+                <canvas id="click_info_canvas" width="50" height="50"></canvas>
+            </div>
+            <span class="container_heading">Best emojis for selected position:</span>
+            <div id="table_container">
+
+            </div>
+        </div>
+
         <div class="control_group">
             <div class="control">
                 <button id="go_button">Go</button>
             </div>
-        </div>
-
-        <div id="table_container">
-
         </div>
 
         <div class="control_container" id="output_container">
