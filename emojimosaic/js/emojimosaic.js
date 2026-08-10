@@ -25,8 +25,33 @@ function unpack_ranges(range_list) {
     return out;
 }
 
+function remove_nonrenderable(codepoints) {
+    const out = [];
+    // compare rendered width of each codepoint to a
+    // known renderable emoji
+    const temp_canvas = new OffscreenCanvas(10, 10);
+    const temp_ctx = temp_canvas.getContext("2d");
+    temp_ctx.font = "20px monospace";
+    const known_width = temp_ctx.measureText(
+        String.fromCodePoint(0x1f60e, 0xfe0f)
+    ).width;
+    const min_allowed = 0.9 * known_width;
+    const max_allowed = 1.1 * known_width;
+    for (const codepoint of codepoints) {
+        const width = temp_ctx.measureText(
+            String.fromCodePoint(codepoint, 0xfe0f)
+        ).width;
+        if (width >= min_allowed && width <= max_allowed) {
+            out.push(codepoint);
+        } else {
+            console.log(`Codepoint 0x${codepoint.toString(16)} is not a renderable emoji, removing from list`);
+        }
+    }
+    return out;
+}
+
 const EMOJI_CATEGORIES = {
-    PEOPLE: unpack_ranges([
+    PEOPLE: remove_nonrenderable(unpack_ranges([
         [0x261d], [0x2639], [0x263a], // index, some faces
         [0x270a, 0x270d],             // raised fist - writing hand
         [0x1f440, 0x1f469],           // eyes - woman
@@ -50,8 +75,8 @@ const EMOJI_CATEGORIES = {
         [0x1fae0, 0x1fae6],           // melting face - biting lip
         [0x1fae8, 0x1faea],           // shaking face - distorted face
         [0x1faf0, 0x1faf8]            // hand making heart with fingers - hand pushing right
-    ]),
-    NATURE: unpack_ranges([
+    ])),
+    NATURE: remove_nonrenderable(unpack_ranges([
         [0x2600, 0x2604],             // sun - comet
         [0x2614], [0x2618],           // umbrella with rain, clover
         [0x26c4], [0x26c5], [0x26c8], // snowman, cloudy, thunderstorm
@@ -64,8 +89,8 @@ const EMOJI_CATEGORIES = {
         [0x1f980, 0x1f9ae],           // crab - guide dog
         [0x1fab0, 0x1fabf],           // fly - goose
         [0x1facd, 0x1facf]            // orca - donkey
-    ]),
-    FOOD: unpack_ranges([
+    ])),
+    FOOD: remove_nonrenderable(unpack_ranges([
         [0x2615],                     // coffee
         [0x1f32d, 0x1f330],           // hot dog - chestnut
         [0x1f336],                    // chili pepper
@@ -74,8 +99,8 @@ const EMOJI_CATEGORIES = {
         [0x1f950, 0x1f96f],           // croissant - bagel
         [0x1f9c0, 0x1f9cb],           // cheese - bubble tea
         [0x1fad0, 0x1fadc]            // blueberries - root vegetable
-    ]),
-    OBJECTS: unpack_ranges([
+    ])),
+    OBJECTS: remove_nonrenderable(unpack_ranges([
         [0x231a, 0x231b],             // watch, hourglass
         [0x23f0, 0x23f3],             // alarm clock - hourglass
         [0x260e],                     // telephone
@@ -118,7 +143,6 @@ const EMOJI_CATEGORIES = {
         [0x1f6aa], [0x1f6ac],         // door, cigarette
         [0x1f6bd], [0x1f6bf, 0x1f6c1],// shower - bathtub
         [0x1f6cb, 0x1f6cf],           // sofa - bed
-
         [0x1f6dd, 0x1f6e2],           // slide - oil drum
         [0x1f93f, 0x1f944],           // diving mask - spoon
         [0x1f9e7, 0x1f9ff],           // red envelope - nazar amulet
@@ -126,8 +150,8 @@ const EMOJI_CATEGORIES = {
         [0x1fa80, 0x1fa8a],           // yoyo - trombone
         [0x1fa8e, 0x1faae],           // treasure chest - hair pick
         [0x1fae7]                     // bubbles
-    ]),
-    TRAVELSPORTS: unpack_ranges([
+    ])),
+    TRAVELSPORTS: remove_nonrenderable(unpack_ranges([
         [0x26bd, 0x26be],             // soccer ball, baseball
         [0x26e9, 0x26ea],             // shinto shrine, church
         [0x26f0, 0x26f5],             // mountain - sailboat
@@ -148,21 +172,43 @@ const EMOJI_CATEGORIES = {
         [0x1f6f0], [0x1f6f3, 0x1f6fc],// satellite, cruise ship - roller skates
         [0x1f938, 0x1f93e],           // cartwheel - handball
         [0x1f945, 0x1f94f]            // goal net - frisbee
-    ]),
+    ])),
     SHAPES: unpack_ranges([
         [0x1f7e0, 0x1f7eb]
-    ])
+    ]),
+    SPACE: [
+        0x3000
+    ]
 };
 
+function redmean_distance(r1, g1, b1, r2, g2, b2) {
+    // redmean color distance
+    const rmean = (r1 + r2) >> 1;
+    const dr = r1 - r2;
+    const dg = g1 - g2;
+    const db = b1 - b2;
+    return Math.sqrt(
+        (((512 + rmean) * dr * dr) >> 8) +
+        (4 * dg * dg) +
+        (((767 - rmean) * db * db) >> 8)
+    );
+}
+
 class EmojiMosaicApp {
-    constructor(image_ctx, top_ctx, compare_size, box_width, box_height, font_size, horizontal_offset=0, vertical_offset=0) {
+    constructor(image_ctx, top_ctx, compare_size, box_width, box_height, font_size, 
+                background_color="#ffffff", horizontal_offset=0, vertical_offset=0) {
         this.image_ctx = image_ctx;
         this.top_ctx = top_ctx;
         this.width = image_ctx.canvas.width;
         this.height = image_ctx.canvas.height;
-        this.image_data = image_ctx.getImageData(0, 0, this.width, this.height);
         this.compare_size = compare_size;
+        this.compare_area = compare_size * compare_size;
+        this.compare_func = this.compare_with_background;
 
+        // app has 3 states:
+        // state 0 = starting state, waiting to start generating
+        // state 1 = activiely generating
+        // state 2 = finished generating
         this.state = 0;
         this.emoji_list = [];
 
@@ -181,16 +227,22 @@ class EmojiMosaicApp {
         this.small_box_ctx = this.small_box_canvas.getContext("2d", {
             willReadFrequently: true, alpha: false
         });
+
         this.set_box_dimensions(box_width, box_height);
 
+        // emoji rendering parameters
         this.font_size = font_size;
         this.horizontal_offset = horizontal_offset;
         this.vertical_offset = vertical_offset;
+        this.background_color = background_color;
+
+        // display parameters
         this.emoji_opacity = 0.7;
-        this.background_color = "#ffffff";
         this.highlight_x = -2;
         this.highlight_y = -2;
 
+        // variables to keep state during mosaic generation
+        // and store results
         this.best_emojis = null;
         this.best_scores = null;
         this.running_x = 0;
@@ -215,6 +267,7 @@ class EmojiMosaicApp {
             this.emoji_ctx.font = `${this.font_size}px monospace`;
             this.emoji_ctx.textBaseline = "middle";
             this.emoji_ctx.textAlign = "center";
+            this.emoji_ctx.fillStyle = "#000000";
             this.emoji_ctx.fillText(
                 String.fromCodePoint(charcode, 0xfe0f),
                 0.5 * this.box_width + this.horizontal_offset,
@@ -262,20 +315,23 @@ class EmojiMosaicApp {
     }
 
     /**
-     * Sets main image to the given image data
-     * @param {ImageData} image_data 
+     * Sets main image
+     * @param {CanvasImageSource} image
      */
-    set_image_data(image_data) {
-        this.image_data = image_data;
-        this.width = image_data.width;
-        this.height = image_data.height;
+    set_image(image) {
+        this.width = image.width;
+        this.height = image.height;
         this.rows = Math.floor(this.height / this.box_height);
         this.columns = Math.floor(this.width / this.box_width);
         this.image_ctx.canvas.width = this.width;
         this.image_ctx.canvas.height = this.height;
         this.top_ctx.canvas.width = this.width;
         this.top_ctx.canvas.height = this.height;
-        this.image_ctx.putImageData(image_data, 0, 0);
+
+        // remove transparency by drawing image on top of white background
+        this.image_ctx.fillStyle = "white";
+        this.image_ctx.fillRect(0, 0, this.width, this.height);
+        this.image_ctx.drawImage(image, 0, 0);
         this.box_data.clear();
         this.draw();
     }
@@ -323,6 +379,16 @@ class EmojiMosaicApp {
      */
     set_vertical_offset(vertical_offset) {
         this.vertical_offset = vertical_offset;
+        this.emoji_data.clear();
+        this.draw();
+    }
+
+    /**
+     * Sets emoji background color
+     * @param {String} background_color A color string like "white" or "#FFFFFF"
+     */
+    set_background_color(background_color) {
+        this.background_color = background_color;
         this.emoji_data.clear();
         this.draw();
     }
@@ -443,7 +509,36 @@ class EmojiMosaicApp {
         );
     }
 
-    compare() {
+    compare_with_background(cutoff=Infinity) {
+        let total = 0;
+        const box_image_data = this.get_box_data(this.running_x, this.running_y);
+        const emoji_image_data = this.get_emoji_data(this.emoji_list[this.running_emoji_index]);
+        for (let py = 0; py < this.compare_size; py++) {
+            for (let px = 0; px < this.compare_size; px++) {
+                const i = 4 * (py * this.compare_size + px);
+                // color of pixel from scaled down image slice
+                const b_red = box_image_data[i];
+                const b_green = box_image_data[i + 1];
+                const b_blue = box_image_data[i + 2];
+                // color of pixel from scaled down emoji
+                const e_red = emoji_image_data[i];
+                const e_green = emoji_image_data[i + 1];
+                const e_blue = emoji_image_data[i + 2];
+
+                // redmean color distance
+                const distance = redmean_distance(
+                    b_red, b_green, b_blue, e_red, e_green, e_blue
+                );
+                total += distance;
+                if (total > cutoff) {
+                    return Infinity;
+                }
+            }
+        }
+        return total;
+    }
+
+    compare_no_background(cutoff=Infinity) {
         let total = 0;
         const box_image_data = this.get_box_data(this.running_x, this.running_y);
         const emoji_image_data = this.get_emoji_data(this.emoji_list[this.running_emoji_index]);
@@ -462,33 +557,25 @@ class EmojiMosaicApp {
 
                 if (e_red == 255 && e_green == 255 && e_blue == 255) {
                     blank_pixels++;
-                    if (blank_pixels > 95) {
-                        // emoji probably can't be displayed in this environment
-                        // if this many pixels are blank
-                        return Infinity;
-                    }
                 } else {
                     // redmean color distance
-                    const rmean = (b_red + e_red) >> 1;
-                    const dr = b_red - e_red;
-                    const dg = b_green - e_green;
-                    const db = b_blue - e_blue;
-                    const d = Math.sqrt(
-                        (((512 + rmean) * dr * dr) >> 8) +
-                        (4 * dg * dg) +
-                        (((767 - rmean) * db * db) >> 8)
+                    const distance = redmean_distance(
+                        b_red, b_green, b_blue, e_red, e_green, e_blue
                     );
-                    total += d;
+                    total += distance;
+                    if (total > cutoff) {
+                        return Infinity;
+                    }
                 }
             }
         }
-        return total * 100 / (100 - blank_pixels);
+        return total * this.compare_area / (this.compare_area - blank_pixels);
     }
 
     step() {
         if (this.state == 1) {
-            const score = this.compare();
             const current_best_scores = this.best_scores[this.running_y][this.running_x];
+            const score = this.compare_func(current_best_scores[9]);
             if (score < current_best_scores[9]) {
                 const current_best_emojis = this.best_emojis[this.running_y][this.running_x];
                 const current_emoji = this.emoji_list[this.running_emoji_index];
@@ -521,7 +608,7 @@ class EmojiMosaicApp {
     }
 }
 
-const app = new EmojiMosaicApp(image_ctx, top_ctx, 10, 25, 25, 20, 0, 0);
+const app = new EmojiMosaicApp(image_ctx, top_ctx, 10, 25, 25, 20, "#ffffff", 0, 0);
 
 const pixel_count_target = 250000;
 
@@ -537,7 +624,7 @@ function resize_and_apply_image(image) {
     const temp_canvas = new OffscreenCanvas(new_width, new_height);
     const temp_ctx = temp_canvas.getContext("2d");
     temp_ctx.drawImage(image, 0, 0, new_width, new_height);
-    app.set_image_data(temp_ctx.getImageData(0, 0, new_width, new_height));
+    app.set_image(temp_canvas);
 }
 
 /**
@@ -604,6 +691,33 @@ document.getElementById("emoji_opacity").addEventListener("input", function (e) 
     app.set_emoji_opacity(v / 100);
 });
 
+// set up compare function selection
+const background_color_container = document.getElementById("background_color_container");
+const background_color_pick = document.getElementById("background_color_pick");
+for (const radio of document.querySelectorAll('input[name="transparency"]')) {
+    radio.addEventListener("change", function (e) {
+        switch (e.target.value) {
+            case "use_background":
+                background_color_container.style.display = "";
+                app.set_background_color(background_color_pick.value);
+                app.compare_func = app.compare_with_background;
+                break;
+            case "average_transparent":
+                background_color_container.style.display = "none";
+                app.set_background_color("#FFFFFF");
+                app.compare_func = app.compare_no_background;
+                break;
+            default:
+                break;
+        }
+    });
+}
+// set up background color selection
+background_color_pick.addEventListener("input", function (e) {
+    const hex_color = e.target.value;
+    app.set_background_color(hex_color);
+});
+
 // set up category checkboxes
 const category_checkboxes = document.getElementsByClassName("category_checkbox");
 const palette_count_text = document.getElementById("palette_count");
@@ -639,6 +753,7 @@ document.getElementById("go_button").addEventListener("click", function (e) {
         grid_settings_container.style.display = "block";
         click_info_container.style.display = "none";
         top_canvas.removeEventListener("pointerdown", finished_click);
+        output_container.style.display = "none";
         output_textbox.innerText = "";
         go_button.textContent = "Go";
     }
@@ -728,7 +843,9 @@ function animate() {
                 charcodes => String.fromCodePoint(charcodes[0], 0xfe0f)
             ).join("")
         ).join("\n");
+        output_textbox.style.backgroundColor = app.background_color;
         output_textbox.innerText = emoji_text;
+        output_container.style.display = "block";
         console.log(emoji_text);
         go_button.textContent = "Reset";
         top_canvas.addEventListener("pointerdown", finished_click);
