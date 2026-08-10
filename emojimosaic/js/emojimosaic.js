@@ -402,6 +402,16 @@ class EmojiMosaicApp {
         this.draw();
     }
 
+    set_highlight(x, y) {
+        this.highlight_x = x;
+        this.highlight_y = y;
+        this.draw();
+    }
+
+    disable_highlight() {
+        this.set_highlight(-2, -2);
+    }
+
     reset() {
         this.best_emojis = null;
         this.best_scores = null;
@@ -752,7 +762,6 @@ document.getElementById("go_button").addEventListener("click", function (e) {
         table_container.innerHTML = "";
         grid_settings_container.style.display = "block";
         click_info_container.style.display = "none";
-        top_canvas.removeEventListener("pointerdown", finished_click);
         output_container.style.display = "none";
         output_textbox.innerText = "";
         go_button.textContent = "Go";
@@ -766,66 +775,76 @@ const click_info_canvas = document.getElementById("click_info_canvas");
 const click_info_ctx = click_info_canvas.getContext("2d");
 click_info_ctx.imageSmoothingEnabled = false;
 const table_container = document.getElementById("table_container");
-function finished_click(e) {
+top_canvas.addEventListener("pointerdown", function (e) {
+    // do nothing if generation hasn't started
+    if (app.state == 0) {
+        return;
+    }
+
     // get row and column of clicked cell
     const canvas_bounds = top_canvas.getBoundingClientRect();
     const x = Math.round(e.clientX - canvas_bounds.left);
     const y = Math.round(e.clientY - canvas_bounds.top);
     const row = Math.floor(y / app.box_height);
     const column = Math.floor(x / app.box_width);
-    if (row < 0 || column < 0 || row >= app.rows || column >= app.columns) {
+    if (row < 0 || column < 0 || row >= app.rows || column >= app.columns ||
+       (app.state == 1 && (row > app.running_y || (row == app.running_y && column >= app.running_x)))
+    ) {
         return;
     }
 
-    click_info_container.style.display = "block";
+    if (row == app.highlight_y && column == app.highlight_x) {
+        // clicked cell is already highlighted, unhighlight it and exit
+        app.disable_highlight();
+        click_info_container.style.display = "none";
+    } else {
+        click_info_container.style.display = "block";
 
-    // set highlight
-    app.highlight_x = column;
-    app.highlight_y = row;
-    app.draw();
-    
-    // show image box
-    const box_data = app.get_box_data(column, row);
-    const box_image_data = new ImageData(box_data, 10, 10);
-    click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
-    click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 50, 50);
+        app.set_highlight(column, row);
+        
+        // show image box
+        const box_data = app.get_box_data(column, row);
+        const box_image_data = new ImageData(box_data, 10, 10);
+        click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
+        click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 50, 50);
 
-    // get top emojis and scores
-    const emojis = app.best_emojis[row][column];
-    const scores = app.best_scores[row][column];
+        // get top emojis and scores
+        const emojis = app.best_emojis[row][column];
+        const scores = app.best_scores[row][column];
 
-    // make table
-    table_container.innerHTML = "";
+        // make table
+        table_container.innerHTML = "";
 
-    const table = document.createElement("table");
-    
-    const emoji_row = document.createElement("tr");
-    table.appendChild(emoji_row);
-    const emoji_row_header = document.createElement("th");
-    emoji_row_header.setAttribute("scope", "row");
-    emoji_row_header.innerHTML = "Emoji";
-    emoji_row.appendChild(emoji_row_header);
-    for (const charcode of emojis) {
-        const cell = document.createElement("td");
-        cell.classList.add("emoji_table_cell");
-        cell.innerHTML = String.fromCodePoint(charcode, 0xfe0f);
-        emoji_row.appendChild(cell);
+        const table = document.createElement("table");
+        
+        const emoji_row = document.createElement("tr");
+        table.appendChild(emoji_row);
+        const emoji_row_header = document.createElement("th");
+        emoji_row_header.setAttribute("scope", "row");
+        emoji_row_header.innerHTML = "Emoji";
+        emoji_row.appendChild(emoji_row_header);
+        for (const charcode of emojis) {
+            const cell = document.createElement("td");
+            cell.classList.add("emoji_table_cell");
+            cell.innerHTML = String.fromCodePoint(charcode, 0xfe0f);
+            emoji_row.appendChild(cell);
+        }
+
+        const score_row = document.createElement("tr");
+        table.appendChild(score_row);
+        const score_row_header = document.createElement("th");
+        score_row_header.setAttribute("scope", "row");
+        score_row_header.innerHTML = "Cost";
+        score_row.appendChild(score_row_header);
+        for (const score of scores) {
+            const cell = document.createElement("td");
+            cell.classList.add("score_table_cell");
+            cell.innerHTML = score.toFixed(1);
+            score_row.appendChild(cell);
+        }
+        table_container.appendChild(table);
     }
-
-    const score_row = document.createElement("tr");
-    table.appendChild(score_row);
-    const score_row_header = document.createElement("th");
-    score_row_header.setAttribute("scope", "row");
-    score_row_header.innerHTML = "Cost";
-    score_row.appendChild(score_row_header);
-    for (const score of scores) {
-        const cell = document.createElement("td");
-        cell.classList.add("score_table_cell");
-        cell.innerHTML = score.toFixed(1);
-        score_row.appendChild(cell);
-    }
-    table_container.appendChild(table);
-}
+});
 
 // animation loop
 // only runs while mosaic is generating
@@ -848,6 +867,5 @@ function animate() {
         output_container.style.display = "block";
         console.log(emoji_text);
         go_button.textContent = "Reset";
-        top_canvas.addEventListener("pointerdown", finished_click);
     }
 }
