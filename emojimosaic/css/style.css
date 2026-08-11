@@ -50,6 +50,7 @@
 
 .wide_cell {
     min-width: 170px;
+    border: none;
 }
 
 .control {
@@ -68,8 +69,9 @@ table {
     margin: 0 auto;
 }
 
-th {
+th, td {
     text-align: center;
+    vertical-align: middle;
     border: 1px solid black;
     padding: 3px;
 }
@@ -83,14 +85,17 @@ th {
 }
 
 .emoji_table_cell {
-    text-align: center;
     border: 1px solid black;
     padding: 3px;
-    font-size: 24px;
+    font-size: 36px;
+}
+
+.emoji_table_canvas {
+    display: inline;
+    border: 1px solid black;
 }
 
 .score_table_cell {
-    text-align: center;
     border: 1px solid black;
     padding: 3px;
     font-family: monospace;

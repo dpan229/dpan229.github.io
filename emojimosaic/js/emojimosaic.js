@@ -11,6 +11,8 @@ const grid_settings_container = document.getElementById("grid_settings");
 const output_container = document.getElementById("output_container");
 const output_textbox = document.getElementById("output_text");
 
+const COMPARISON_SIZE = 15;
+
 function unpack_ranges(range_list) {
     const out = [];
     for (const a of range_list) {
@@ -181,8 +183,19 @@ const EMOJI_CATEGORIES = {
     ]
 };
 
+/**
+ * Returns the redmean color distance between two rgb colors
+ * (`r1`, `g1`, `b1`) and (`r2`, `g2`, `b2`). Output value
+ * ranges from 0.0 to 764.833966357
+ * @param {Number} r1 
+ * @param {Number} g1 
+ * @param {Number} b1 
+ * @param {Number} r2 
+ * @param {Number} g2 
+ * @param {Number} b2 
+ * @returns 
+ */
 function redmean_distance(r1, g1, b1, r2, g2, b2) {
-    // redmean color distance
     const rmean = (r1 + r2) >> 1;
     const dr = r1 - r2;
     const dg = g1 - g2;
@@ -217,11 +230,11 @@ class EmojiMosaicApp {
 
         this.emoji_canvas = new OffscreenCanvas(box_width, box_height);
         this.emoji_ctx = this.emoji_canvas.getContext("2d", {
-            willReadFrequently: true, alpha: false 
+            willReadFrequently: true
         });
         this.small_emoji_canvas = new OffscreenCanvas(compare_size, compare_size);
         this.small_emoji_ctx = this.small_emoji_canvas.getContext("2d", {
-            willReadFrequently: true, alpha: false
+            willReadFrequently: true
         });
         this.small_box_canvas = new OffscreenCanvas(compare_size, compare_size);
         this.small_box_ctx = this.small_box_canvas.getContext("2d", {
@@ -234,6 +247,7 @@ class EmojiMosaicApp {
         this.font_size = font_size;
         this.horizontal_offset = horizontal_offset;
         this.vertical_offset = vertical_offset;
+        this.emoji_data_transparency = false;
         this.background_color = background_color;
 
         // display parameters
@@ -262,8 +276,13 @@ class EmojiMosaicApp {
             return this.emoji_data.get(charcode);
         } else {
             // draw emoji on emoji canvas using size and positioning settings
-            this.emoji_ctx.fillStyle = this.background_color;
-            this.emoji_ctx.fillRect(0, 0, this.box_width, this.box_height);
+            if (this.emoji_data_transparency) {
+                this.emoji_ctx.reset();
+                this.small_emoji_ctx.reset();
+            } else {
+                this.emoji_ctx.fillStyle = this.background_color;
+                this.emoji_ctx.fillRect(0, 0, this.box_width, this.box_height);
+            }
             this.emoji_ctx.font = `${this.font_size}px monospace`;
             this.emoji_ctx.textBaseline = "middle";
             this.emoji_ctx.textAlign = "center";
@@ -564,15 +583,16 @@ class EmojiMosaicApp {
                 const e_red = emoji_image_data[i];
                 const e_green = emoji_image_data[i + 1];
                 const e_blue = emoji_image_data[i + 2];
+                const e_alpha = emoji_image_data[i + 3];
 
-                if (e_red == 255 && e_green == 255 && e_blue == 255) {
-                    blank_pixels++;
-                } else {
+                const opacity = e_alpha / 255;
+                blank_pixels += 1 - opacity;
+                if (e_alpha > 0) {
                     // redmean color distance
                     const distance = redmean_distance(
                         b_red, b_green, b_blue, e_red, e_green, e_blue
                     );
-                    total += distance;
+                    total += distance * opacity;
                     if (total > cutoff) {
                         return Infinity;
                     }
@@ -618,7 +638,7 @@ class EmojiMosaicApp {
     }
 }
 
-const app = new EmojiMosaicApp(image_ctx, top_ctx, 10, 25, 25, 20, "#ffffff", 0, 0);
+const app = new EmojiMosaicApp(image_ctx, top_ctx, COMPARISON_SIZE, 25, 25, 20, "#ffffff", 0, 0);
 
 const pixel_count_target = 250000;
 
@@ -709,11 +729,13 @@ for (const radio of document.querySelectorAll('input[name="transparency"]')) {
         switch (e.target.value) {
             case "use_background":
                 background_color_container.style.display = "";
+                app.emoji_data_transparency = false;
                 app.set_background_color(background_color_pick.value);
                 app.compare_func = app.compare_with_background;
                 break;
             case "average_transparent":
                 background_color_container.style.display = "none";
+                app.emoji_data_transparency = true;
                 app.set_background_color("#FFFFFF");
                 app.compare_func = app.compare_no_background;
                 break;
@@ -769,7 +791,7 @@ document.getElementById("go_button").addEventListener("click", function (e) {
 });
 
 const click_info_container = document.getElementById("click_info");
-const click_info_transfer_canvas = new OffscreenCanvas(10, 10);
+const click_info_transfer_canvas = new OffscreenCanvas(COMPARISON_SIZE, COMPARISON_SIZE);
 const click_info_transfer_ctx = click_info_transfer_canvas.getContext("2d");
 const click_info_canvas = document.getElementById("click_info_canvas");
 const click_info_ctx = click_info_canvas.getContext("2d");
@@ -804,9 +826,9 @@ top_canvas.addEventListener("pointerdown", function (e) {
         
         // show image box
         const box_data = app.get_box_data(column, row);
-        const box_image_data = new ImageData(box_data, 10, 10);
+        const box_image_data = new ImageData(box_data, COMPARISON_SIZE, COMPARISON_SIZE);
         click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
-        click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 50, 50);
+        click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
 
         // get top emojis and scores
         const emojis = app.best_emojis[row][column];
@@ -828,6 +850,28 @@ top_canvas.addEventListener("pointerdown", function (e) {
             cell.classList.add("emoji_table_cell");
             cell.innerHTML = String.fromCodePoint(charcode, 0xfe0f);
             emoji_row.appendChild(cell);
+        }
+
+        const canvas_row = document.createElement("tr");
+        table.appendChild(canvas_row);
+        const canvas_row_header = document.createElement("th");
+        canvas_row_header.setAttribute("scope", "row");
+        canvas_row_header.innerHTML = "Comparison<br>image";
+        canvas_row.appendChild(canvas_row_header);
+        for (const charcode of emojis) {
+            const emoji_compare_canvas = document.createElement("canvas");
+            emoji_compare_canvas.classList.add("emoji_table_canvas");
+            emoji_compare_canvas.width = 3*COMPARISON_SIZE;
+            emoji_compare_canvas.height = 3*COMPARISON_SIZE;
+            const emoji_compare_ctx = emoji_compare_canvas.getContext("2d");
+            emoji_compare_ctx.imageSmoothingEnabled = false;
+            const emoji_data = app.get_emoji_data(charcode);
+            const emoji_image_data = new ImageData(emoji_data, COMPARISON_SIZE, COMPARISON_SIZE);
+            click_info_transfer_ctx.putImageData(emoji_image_data, 0, 0);
+            emoji_compare_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
+            const cell = document.createElement("td");
+            cell.appendChild(emoji_compare_canvas);
+            canvas_row.appendChild(cell);
         }
 
         const score_row = document.createElement("tr");
