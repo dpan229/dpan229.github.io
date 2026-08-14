@@ -11,6 +11,7 @@ const grid_settings_container = document.getElementById("grid_settings");
 const output_container = document.getElementById("output_container");
 const output_textbox = document.getElementById("output_text");
 
+// size to reduce emoji images and image boxes to, in pixels
 const COMPARISON_SIZE = 15;
 
 function unpack_ranges(range_list) {
@@ -207,6 +208,177 @@ function redmean_distance(r1, g1, b1, r2, g2, b2) {
     );
 }
 
+const D = redmean_distance(0, 0, 0, 255, 255, 255) / 2;
+/**
+ * This is an extension of the redmean color distance to include
+ * transparency. The distance between every fully opaque color
+ * and full transparency is equal to half of the distance between
+ * black and white. This metric satisfies the triangle inequality.
+ * Inputs are the components of 2 rgba colors 
+ * (`r1`, `g1`, `b1`, `a1`) and (`r2`, `g2`, `b2`, `a2`). Output value
+ * ranges from 0.0 to 764.833966357
+ * @param {Number} r1 
+ * @param {Number} g1 
+ * @param {Number} b1 
+ * @param {Number} r2 
+ * @param {Number} g2 
+ * @param {Number} b2 
+ * @returns 
+ */
+function redmean_distance_alpha(r1, g1, b1, a1, r2, g2, b2, a2) {
+    const d = redmean_distance(r1, g1, b1, r2, g2, b2);
+    const o1 = a1 / 255;
+    const o2 = a2 / 255;
+    return Math.sqrt(o1 * o2 * d * d + (Math.abs(o1 - o2) * D)**2);
+}
+
+class VPTreeNode {
+    constructor(is_leaf) {
+        this.is_leaf = is_leaf;
+        this.pivot = null;
+        this.threshold = null;
+        this.close_node = null;
+        this.far_node = null;
+        this.leaf_datapoints = [];
+    }
+}
+
+/**
+ * Implementation of a vantage-point tree, allowing efficient searches
+ * for the nearest `k` elements of a dataset to a query point using
+ * any distance metric that satisfies the triangle inequality
+ */
+class VPTree {
+    constructor(datapoints, distance_func) {
+        this.distance_func = distance_func;
+        this.root = this.construction_helper(datapoints);
+    }
+
+    construction_helper(datapoints) {
+        if (datapoints.length <= 5) {
+            const node = new VPTreeNode(true);
+            node.leaf_datapoints = datapoints;
+            return node; 
+        } else {
+            const pivot = datapoints[0];
+            // Calculate the distance of each datapoint to the pivot.
+            // Set threshold to about median distance, partition datapoints 
+            // into 2 sets: those that are closer than the threshold and those 
+            // that are farther than the threshold, and recurse on both sets.
+            
+            // faster implementation option for partitioning: use a heap
+            const diffs = [];
+            for (let i = 0; i < datapoints.length; i++) {
+                const d = this.distance_func(pivot, datapoints[i]);
+                diffs.push([datapoints[i], d]);
+            }
+            diffs.sort((a, b) => a[1] - b[1]);
+            const threshold_index = Math.floor((datapoints.length - 1) / 2);
+            const threshold = (diffs[threshold_index][1] + diffs[threshold_index + 1][1]) / 2;
+
+            const near_datapoints = [];
+            for (let i = 0; i <= threshold_index; i++) {
+                near_datapoints.push(diffs[i][0]);
+            }
+            const far_datapoints = [];
+            for (let i = threshold_index + 1; i < diffs.length; i++) {
+                far_datapoints.push(diffs[i][0]);
+            }
+
+            const node = new VPTreeNode(false);
+            node.pivot = pivot;
+            node.threshold = threshold;
+            node.close_node = this.construction_helper(near_datapoints);
+            node.far_node = this.construction_helper(far_datapoints);
+            return node;
+        }
+    }
+
+    /**
+     * Returns a list of the `k` nearest neighbors of this tree's dataset 
+     * to `query`, as measured by this tree's distance function. The output is
+     * a list of at most `k` 2-element lists containing the datapoint as the 
+     * first element and the distance from the query as the second element, 
+     * in order from closest to farthest.
+     * @param {*} query 
+     * @param {Number} k 
+     * @returns {Array<Array>}
+     */
+    knn(query, k=1) {
+        return this.knn_helper(query, this.root, k);
+    }
+
+    knn_helper(query, root, k) {
+        if (root.is_leaf) {
+            const diffs = [];
+            for (const datapoint of root.leaf_datapoints) {
+                const d = this.distance_func(datapoint, query);
+                diffs.push([datapoint, d]);
+            }
+            diffs.sort((a, b) => a[1] - b[1]);
+            return diffs.slice(0, k);
+        } else {
+            const d = this.distance_func(root.pivot, query);
+            const query_subtree = d < root.threshold ? root.close_node : root.far_node;
+            const other_subtree = d < root.threshold ? root.far_node : root.close_node;
+
+            // search the subtree that would contain the query value
+            const subtree_result = this.knn_helper(query, query_subtree, k);
+
+            // any datapoint found in the subtree whose distance to the
+            // query is less than this value is guaranteed to be closer than
+            // any datapoint in the other subtree (by the triangle inequality) 
+            const guaranteed_threshold = Math.abs(root.threshold - d);
+
+            // count number of results closer than threshold
+            let i = 0;
+            while (i < subtree_result.length && subtree_result[i][1] < guaranteed_threshold) {
+                i++;
+            }
+            const remaining = k - i;
+
+            if (remaining == 0) {
+                return subtree_result;
+            }
+
+            // search the other subtree for at most k - i items
+            const other_result = this.knn_helper(query, other_subtree, remaining);
+
+            // merge the two results
+            const out = subtree_result.slice(0, i);
+            let j = 0;
+            while (out.length < k) {
+                if (i >= subtree_result.length) {
+                    if (j >= other_result.length) {
+                        // both lists out of items
+                        break;
+                    } else {
+                        // subtree_result out of items
+                        out.push(other_result[j]);
+                        j++;
+                    }
+                } else {
+                    if (j >= other_result.length) {
+                        // other_result out of items
+                        out.push(subtree_result[i]);
+                        i++;
+                    } else {
+                        // both lists have items
+                        if (subtree_result[i][1] < other_result[j][1]) {
+                            out.push(subtree_result[i]);
+                            i++;
+                        } else {
+                            out.push(other_result[j]);
+                            j++;
+                        }
+                    }
+                }
+            }
+            return out;
+        }
+    }
+}
+
 class EmojiMosaicApp {
     constructor(image_ctx, top_ctx, compare_size, box_width, box_height, font_size, 
                 background_color="#ffffff", horizontal_offset=0, vertical_offset=0) {
@@ -216,7 +388,7 @@ class EmojiMosaicApp {
         this.height = image_ctx.canvas.height;
         this.compare_size = compare_size;
         this.compare_area = compare_size * compare_size;
-        this.compare_func = this.compare_with_background;
+        this.compare_func = this.compare_no_transparency;
 
         // app has 3 states:
         // state 0 = starting state, waiting to start generating
@@ -238,7 +410,7 @@ class EmojiMosaicApp {
         });
         this.small_box_canvas = new OffscreenCanvas(compare_size, compare_size);
         this.small_box_ctx = this.small_box_canvas.getContext("2d", {
-            willReadFrequently: true, alpha: false
+            willReadFrequently: true
         });
 
         this.set_box_dimensions(box_width, box_height);
@@ -257,6 +429,8 @@ class EmojiMosaicApp {
 
         // variables to keep state during mosaic generation
         // and store results
+        this.vp_tree = null;
+        this.use_vp_tree = true;
         this.best_emojis = null;
         this.best_scores = null;
         this.running_x = 0;
@@ -333,6 +507,22 @@ class EmojiMosaicApp {
         }
     }
 
+    get_vp_tree() {
+        if (this.vp_tree === null) {
+            console.log("Constructing vp tree");
+            this.top_ctx.fillStyle = "black";
+            this.top_ctx.fillRect(0, 0, this.width, this.height);
+            this.vp_tree = new VPTree(this.emoji_list, (a, b) => {
+                // a and b can be either integers (emoji codepoints)
+                // or image data
+                const image_data_1 = typeof a === 'number' ? this.get_emoji_data(a) : a;
+                const image_data_2 = typeof b === 'number' ? this.get_emoji_data(b) : b;
+                return this.compare_func(image_data_1, image_data_2);
+            });
+        }
+        return this.vp_tree;
+    }
+
     /**
      * Sets main image
      * @param {CanvasImageSource} image
@@ -369,6 +559,7 @@ class EmojiMosaicApp {
         this.columns = Math.floor(this.width / this.box_width);
         this.box_data.clear();
         this.emoji_data.clear();
+        this.vp_tree = null;
         this.draw();
     }
 
@@ -379,6 +570,7 @@ class EmojiMosaicApp {
     set_font_size(font_size) {
         this.font_size = font_size;
         this.emoji_data.clear();
+        this.vp_tree = null;
         this.draw();
     }
 
@@ -389,6 +581,7 @@ class EmojiMosaicApp {
     set_horizontal_offset(horizontal_offset) {
         this.horizontal_offset = horizontal_offset;
         this.emoji_data.clear();
+        this.vp_tree = null;
         this.draw();
     }
 
@@ -399,6 +592,7 @@ class EmojiMosaicApp {
     set_vertical_offset(vertical_offset) {
         this.vertical_offset = vertical_offset;
         this.emoji_data.clear();
+        this.vp_tree = null;
         this.draw();
     }
 
@@ -409,6 +603,7 @@ class EmojiMosaicApp {
     set_background_color(background_color) {
         this.background_color = background_color;
         this.emoji_data.clear();
+        this.vp_tree = null;
         this.draw();
     }
 
@@ -437,7 +632,6 @@ class EmojiMosaicApp {
         this.state = 0;
         this.running_x = 0;
         this.running_y = 0;
-        this.running_emoji_index = 0;
         this.highlight_x = -2;
         this.highlight_y = -2;
         this.draw();
@@ -538,92 +732,85 @@ class EmojiMosaicApp {
         );
     }
 
-    compare_with_background(cutoff=Infinity) {
+    compare_no_transparency(image_data_1, image_data_2) {
         let total = 0;
-        const box_image_data = this.get_box_data(this.running_x, this.running_y);
-        const emoji_image_data = this.get_emoji_data(this.emoji_list[this.running_emoji_index]);
         for (let py = 0; py < this.compare_size; py++) {
             for (let px = 0; px < this.compare_size; px++) {
                 const i = 4 * (py * this.compare_size + px);
-                // color of pixel from scaled down image slice
-                const b_red = box_image_data[i];
-                const b_green = box_image_data[i + 1];
-                const b_blue = box_image_data[i + 2];
-                // color of pixel from scaled down emoji
-                const e_red = emoji_image_data[i];
-                const e_green = emoji_image_data[i + 1];
-                const e_blue = emoji_image_data[i + 2];
+                // color of pixel from image 1
+                const r1 = image_data_1[i];
+                const g1 = image_data_1[i + 1];
+                const b1 = image_data_1[i + 2];
+                // color of pixel from image 2
+                const r2 = image_data_2[i];
+                const g2 = image_data_2[i + 1];
+                const b2 = image_data_2[i + 2];
 
                 // redmean color distance
                 const distance = redmean_distance(
-                    b_red, b_green, b_blue, e_red, e_green, e_blue
+                    r1, g1, b1, r2, g2, b2
                 );
                 total += distance;
-                if (total > cutoff) {
-                    return Infinity;
-                }
             }
         }
         return total;
     }
 
-    compare_no_background(cutoff=Infinity) {
+    compare_with_transparency(image_data_1, image_data_2) {
         let total = 0;
-        const box_image_data = this.get_box_data(this.running_x, this.running_y);
-        const emoji_image_data = this.get_emoji_data(this.emoji_list[this.running_emoji_index]);
         let blank_pixels = 0;
         for (let py = 0; py < this.compare_size; py++) {
             for (let px = 0; px < this.compare_size; px++) {
                 const i = 4 * (py * this.compare_size + px);
-                // color of pixel from scaled down image slice
-                const b_red = box_image_data[i];
-                const b_green = box_image_data[i + 1];
-                const b_blue = box_image_data[i + 2];
-                // color of pixel from scaled down emoji
-                const e_red = emoji_image_data[i];
-                const e_green = emoji_image_data[i + 1];
-                const e_blue = emoji_image_data[i + 2];
-                const e_alpha = emoji_image_data[i + 3];
+                // color of pixel from image 1
+                const r1 = image_data_1[i];
+                const g1 = image_data_1[i + 1];
+                const b1 = image_data_1[i + 2];
+                const a1 = image_data_1[i + 3];
+                // color of pixel from image 2
+                const r2 = image_data_2[i];
+                const g2 = image_data_2[i + 1];
+                const b2 = image_data_2[i + 2];
+                const a2 = image_data_2[i + 3];
 
-                const opacity = e_alpha / 255;
-                blank_pixels += 1 - opacity;
-                if (e_alpha > 0) {
+                // const distance = redmean_distance_alpha(
+                //     r1, g1, b1, a1, r2, g2, b2, a2
+                // );
+                // total += distance;
+
+                const mult_opacity = a1 * a2 / 65025;
+                blank_pixels += 1 - mult_opacity;
+                if (mult_opacity > 0) {
                     // redmean color distance
                     const distance = redmean_distance(
-                        b_red, b_green, b_blue, e_red, e_green, e_blue
+                        r1, g1, b1, r2, g2, b2
                     );
-                    total += distance * opacity;
-                    if (total > cutoff) {
-                        return Infinity;
-                    }
+                    total += distance * mult_opacity;
                 }
             }
         }
-        return total * this.compare_area / (this.compare_area - blank_pixels);
+        if (blank_pixels == this.compare_area) {
+            return Infinity;
+        } else {
+            return total * this.compare_area / (this.compare_area - blank_pixels);
+        }
     }
 
     step() {
         if (this.state == 1) {
-            const current_best_scores = this.best_scores[this.running_y][this.running_x];
-            const score = this.compare_func(current_best_scores[9]);
-            if (score < current_best_scores[9]) {
-                const current_best_emojis = this.best_emojis[this.running_y][this.running_x];
-                const current_emoji = this.emoji_list[this.running_emoji_index];
-                // replace lowest
-                current_best_scores[9] = score;
-                current_best_emojis[9] = current_emoji;
-                let i = 9;
-                while (i > 0 && score < current_best_scores[i - 1]) {
-                    // swap upwards
-                    [current_best_scores[i - 1], current_best_scores[i]] = [current_best_scores[i], current_best_scores[i - 1]];
-                    [current_best_emojis[i - 1], current_best_emojis[i]] = [current_best_emojis[i], current_best_emojis[i - 1]];
-                    i--;
+            if (this.use_vp_tree) {
+                // use the vp tree to find 10 best emojis.
+                // this should be used if the distance metric satisfies the traingle inequality
+                // since it's much more efficient than checking each individually
+                const vp_tree = this.get_vp_tree();
+                const box_data = this.get_box_data(this.running_x, this.running_y);
+                const best_matches = vp_tree.knn(box_data, 10);
+                for (let i = 0; i < 10; i++) {
+                    this.best_emojis[this.running_y][this.running_x][i] = best_matches[i][0];
+                    this.best_scores[this.running_y][this.running_x][i] = best_matches[i][1];
                 }
-            }
 
-            this.running_emoji_index++;
-            if (this.running_emoji_index >= this.emoji_list.length) {
-                this.running_emoji_index = 0;
+                // go to next spot
                 this.running_x++;
                 if (this.running_x >= this.columns) {
                     this.running_x = 0;
@@ -631,6 +818,44 @@ class EmojiMosaicApp {
                     if (this.running_y >= this.rows) {
                         this.running_y = 0;
                         this.state = 2;
+                    }
+                }
+            } else {
+                // don't use vp tree, compare each emoji individually.
+                // this is a fallback for if distance metric does not satisfy the triangle
+                // inequality, since a vp tree doesn't work in that case
+                for (let steps = 0; steps < this.emoji_list.length; steps++) {
+                    const current_best_scores = this.best_scores[this.running_y][this.running_x];
+                    const box_data = this.get_box_data(this.running_x, this.running_y);
+                    const emoji_data = this.get_emoji_data(this.emoji_list[this.running_emoji_index]);
+                    const score = this.compare_func(box_data, emoji_data);
+                    if (score < current_best_scores[9]) {
+                        const current_best_emojis = this.best_emojis[this.running_y][this.running_x];
+                        const current_emoji = this.emoji_list[this.running_emoji_index];
+                        // replace lowest
+                        current_best_scores[9] = score;
+                        current_best_emojis[9] = current_emoji;
+                        let i = 9;
+                        while (i > 0 && score < current_best_scores[i - 1]) {
+                            // swap upwards
+                            [current_best_scores[i - 1], current_best_scores[i]] = [current_best_scores[i], current_best_scores[i - 1]];
+                            [current_best_emojis[i - 1], current_best_emojis[i]] = [current_best_emojis[i], current_best_emojis[i - 1]];
+                            i--;
+                        }
+                    }
+
+                    this.running_emoji_index++;
+                    if (this.running_emoji_index >= this.emoji_list.length) {
+                        this.running_emoji_index = 0;
+                        this.running_x++;
+                        if (this.running_x >= this.columns) {
+                            this.running_x = 0;
+                            this.running_y++;
+                            if (this.running_y >= this.rows) {
+                                this.running_y = 0;
+                                this.state = 2;
+                            }
+                        }
                     }
                 }
             }
@@ -730,14 +955,16 @@ for (const radio of document.querySelectorAll('input[name="transparency"]')) {
             case "use_background":
                 background_color_container.style.display = "";
                 app.emoji_data_transparency = false;
+                app.use_vp_tree = true;
                 app.set_background_color(background_color_pick.value);
-                app.compare_func = app.compare_with_background;
+                app.compare_func = app.compare_no_transparency;
                 break;
             case "average_transparent":
                 background_color_container.style.display = "none";
                 app.emoji_data_transparency = true;
+                app.use_vp_tree = false;
                 app.set_background_color("#FFFFFF");
-                app.compare_func = app.compare_no_background;
+                app.compare_func = app.compare_with_transparency;
                 break;
             default:
                 break;
@@ -761,6 +988,7 @@ function set_categories() {
             app.emoji_list = app.emoji_list.concat(EMOJI_CATEGORIES[category]);
         }
     }
+    app.vp_tree = null;
     palette_count_text.textContent = `Total emojis: ${app.emoji_list.length}`;
 }
 for (const checkbox of category_checkboxes) {
@@ -797,6 +1025,75 @@ const click_info_canvas = document.getElementById("click_info_canvas");
 const click_info_ctx = click_info_canvas.getContext("2d");
 click_info_ctx.imageSmoothingEnabled = false;
 const table_container = document.getElementById("table_container");
+function select_box(row, column) {
+    click_info_container.style.display = "block";
+
+    app.set_highlight(column, row);
+    
+    // show image box
+    const box_data = app.get_box_data(column, row);
+    const box_image_data = new ImageData(box_data, COMPARISON_SIZE, COMPARISON_SIZE);
+    click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
+    click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
+
+    // get top emojis and scores
+    const emojis = app.best_emojis[row][column];
+    const scores = app.best_scores[row][column];
+
+    // make table
+    table_container.innerHTML = "";
+
+    const table = document.createElement("table");
+    
+    const emoji_row = document.createElement("tr");
+    table.appendChild(emoji_row);
+    const emoji_row_header = document.createElement("th");
+    emoji_row_header.setAttribute("scope", "row");
+    emoji_row_header.innerHTML = "Emoji";
+    emoji_row.appendChild(emoji_row_header);
+    for (const charcode of emojis) {
+        const cell = document.createElement("td");
+        cell.classList.add("emoji_table_cell");
+        cell.innerHTML = String.fromCodePoint(charcode, 0xfe0f);
+        emoji_row.appendChild(cell);
+    }
+
+    const canvas_row = document.createElement("tr");
+    table.appendChild(canvas_row);
+    const canvas_row_header = document.createElement("th");
+    canvas_row_header.setAttribute("scope", "row");
+    canvas_row_header.innerHTML = "Comparison<br>image";
+    canvas_row.appendChild(canvas_row_header);
+    for (const charcode of emojis) {
+        const emoji_compare_canvas = document.createElement("canvas");
+        emoji_compare_canvas.classList.add("emoji_table_canvas");
+        emoji_compare_canvas.width = 3*COMPARISON_SIZE;
+        emoji_compare_canvas.height = 3*COMPARISON_SIZE;
+        const emoji_compare_ctx = emoji_compare_canvas.getContext("2d");
+        emoji_compare_ctx.imageSmoothingEnabled = false;
+        const emoji_data = app.get_emoji_data(charcode);
+        const emoji_image_data = new ImageData(emoji_data, COMPARISON_SIZE, COMPARISON_SIZE);
+        click_info_transfer_ctx.putImageData(emoji_image_data, 0, 0);
+        emoji_compare_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
+        const cell = document.createElement("td");
+        cell.appendChild(emoji_compare_canvas);
+        canvas_row.appendChild(cell);
+    }
+
+    const score_row = document.createElement("tr");
+    table.appendChild(score_row);
+    const score_row_header = document.createElement("th");
+    score_row_header.setAttribute("scope", "row");
+    score_row_header.innerHTML = "Cost";
+    score_row.appendChild(score_row_header);
+    for (const score of scores) {
+        const cell = document.createElement("td");
+        cell.classList.add("score_table_cell");
+        cell.innerHTML = score.toFixed(1);
+        score_row.appendChild(cell);
+    }
+    table_container.appendChild(table);
+}
 top_canvas.addEventListener("pointerdown", function (e) {
     // do nothing if generation hasn't started
     if (app.state == 0) {
@@ -809,6 +1106,7 @@ top_canvas.addEventListener("pointerdown", function (e) {
     const y = Math.round(e.clientY - canvas_bounds.top);
     const row = Math.floor(y / app.box_height);
     const column = Math.floor(x / app.box_width);
+    // stop if clicked box is not valid
     if (row < 0 || column < 0 || row >= app.rows || column >= app.columns ||
        (app.state == 1 && (row > app.running_y || (row == app.running_y && column >= app.running_x)))
     ) {
@@ -816,86 +1114,18 @@ top_canvas.addEventListener("pointerdown", function (e) {
     }
 
     if (row == app.highlight_y && column == app.highlight_x) {
-        // clicked cell is already highlighted, unhighlight it and exit
+        // clicked cell is already highlighted, unhighlight it
         app.disable_highlight();
         click_info_container.style.display = "none";
     } else {
-        click_info_container.style.display = "block";
-
-        app.set_highlight(column, row);
-        
-        // show image box
-        const box_data = app.get_box_data(column, row);
-        const box_image_data = new ImageData(box_data, COMPARISON_SIZE, COMPARISON_SIZE);
-        click_info_transfer_ctx.putImageData(box_image_data, 0, 0);
-        click_info_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
-
-        // get top emojis and scores
-        const emojis = app.best_emojis[row][column];
-        const scores = app.best_scores[row][column];
-
-        // make table
-        table_container.innerHTML = "";
-
-        const table = document.createElement("table");
-        
-        const emoji_row = document.createElement("tr");
-        table.appendChild(emoji_row);
-        const emoji_row_header = document.createElement("th");
-        emoji_row_header.setAttribute("scope", "row");
-        emoji_row_header.innerHTML = "Emoji";
-        emoji_row.appendChild(emoji_row_header);
-        for (const charcode of emojis) {
-            const cell = document.createElement("td");
-            cell.classList.add("emoji_table_cell");
-            cell.innerHTML = String.fromCodePoint(charcode, 0xfe0f);
-            emoji_row.appendChild(cell);
-        }
-
-        const canvas_row = document.createElement("tr");
-        table.appendChild(canvas_row);
-        const canvas_row_header = document.createElement("th");
-        canvas_row_header.setAttribute("scope", "row");
-        canvas_row_header.innerHTML = "Comparison<br>image";
-        canvas_row.appendChild(canvas_row_header);
-        for (const charcode of emojis) {
-            const emoji_compare_canvas = document.createElement("canvas");
-            emoji_compare_canvas.classList.add("emoji_table_canvas");
-            emoji_compare_canvas.width = 3*COMPARISON_SIZE;
-            emoji_compare_canvas.height = 3*COMPARISON_SIZE;
-            const emoji_compare_ctx = emoji_compare_canvas.getContext("2d");
-            emoji_compare_ctx.imageSmoothingEnabled = false;
-            const emoji_data = app.get_emoji_data(charcode);
-            const emoji_image_data = new ImageData(emoji_data, COMPARISON_SIZE, COMPARISON_SIZE);
-            click_info_transfer_ctx.putImageData(emoji_image_data, 0, 0);
-            emoji_compare_ctx.drawImage(click_info_transfer_canvas, 0, 0, 3*COMPARISON_SIZE, 3*COMPARISON_SIZE);
-            const cell = document.createElement("td");
-            cell.appendChild(emoji_compare_canvas);
-            canvas_row.appendChild(cell);
-        }
-
-        const score_row = document.createElement("tr");
-        table.appendChild(score_row);
-        const score_row_header = document.createElement("th");
-        score_row_header.setAttribute("scope", "row");
-        score_row_header.innerHTML = "Cost";
-        score_row.appendChild(score_row_header);
-        for (const score of scores) {
-            const cell = document.createElement("td");
-            cell.classList.add("score_table_cell");
-            cell.innerHTML = score.toFixed(1);
-            score_row.appendChild(cell);
-        }
-        table_container.appendChild(table);
+        select_box(row, column);
     }
 });
 
 // animation loop
 // only runs while mosaic is generating
 function animate() {
-    for (let i = 0; i < 100; i++) {
-        app.step();
-    }
+    app.step();
     app.draw();
     if (app.state == 1) {
         requestAnimationFrame(animate);
