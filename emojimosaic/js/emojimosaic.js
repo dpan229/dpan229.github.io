@@ -108,7 +108,8 @@ const EMOJI_CATEGORIES = {
         [0x23f0, 0x23f3],             // alarm clock - hourglass
         [0x260e],                     // telephone
         [0x265f],                     // chess pawn
-        [0x2692, 0x2697],             // hammer and pick - alembic
+        [0x2692, 0x2694],             // hammer and pick - crossed swords
+        [0x2696, 0x2697],             // scales, alembic
         [0x2699],                     // gear
         [0x26b0, 0x26b1],             // coffin, urn
         [0x26cf], [0x26d1], [0x26d3], // pickaxe, helmet, chains
@@ -381,7 +382,8 @@ class VPTree {
 
 class EmojiMosaicApp {
     constructor(image_ctx, top_ctx, compare_size, box_width, box_height, font_size, 
-                background_color="#ffffff", horizontal_offset=0, vertical_offset=0) {
+                center_grid=true, background_color="#ffffff", horizontal_offset=0, 
+                vertical_offset=0) {
         this.image_ctx = image_ctx;
         this.top_ctx = top_ctx;
         this.width = image_ctx.canvas.width;
@@ -413,6 +415,7 @@ class EmojiMosaicApp {
             willReadFrequently: true
         });
 
+        this.center_grid = center_grid;
         this.set_box_dimensions(box_width, box_height);
 
         // emoji rendering parameters
@@ -494,7 +497,7 @@ class EmojiMosaicApp {
             // downscale section of image onto small canvas
             this.small_box_ctx.drawImage(
                 this.image_ctx.canvas,
-                x * this.box_width, y * this.box_height,
+                this.x0 + x * this.box_width, this.y0 + y * this.box_height,
                 this.box_width, this.box_height,
                 0, 0,
                 this.compare_size, this.compare_size
@@ -536,6 +539,7 @@ class EmojiMosaicApp {
         this.image_ctx.canvas.height = this.height;
         this.top_ctx.canvas.width = this.width;
         this.top_ctx.canvas.height = this.height;
+        this.update_grid_origin();
 
         // remove transparency by drawing image on top of white background
         this.image_ctx.fillStyle = "white";
@@ -553,14 +557,40 @@ class EmojiMosaicApp {
     set_box_dimensions(box_width, box_height) {
         this.box_width = box_width;
         this.box_height = box_height;
+        
         this.emoji_ctx.canvas.width = box_width;
         this.emoji_ctx.canvas.height = box_height;
         this.rows = Math.floor(this.height / this.box_height);
         this.columns = Math.floor(this.width / this.box_width);
+        this.update_grid_origin();
         this.box_data.clear();
         this.emoji_data.clear();
         this.vp_tree = null;
         this.draw();
+    }
+
+    /**
+     * Sets whether to center the grid on the image or have it
+     * anchored to the top left corner
+     * @param {Boolean} center_grid 
+     */
+    set_grid_centering(center_grid) {
+        this.center_grid = center_grid;
+        this.update_grid_origin();
+        this.box_data.clear();
+        this.emoji_data.clear();
+        this.vp_tree = null;
+        this.draw();
+    }
+
+    update_grid_origin() {
+        if (this.center_grid) {
+            this.x0 = (this.width % this.box_width) / 2;
+            this.y0 = (this.height % this.box_height) / 2;
+        } else {
+            this.x0 = 0;
+            this.y0 = 0;
+        }
     }
 
     /**
@@ -647,16 +677,16 @@ class EmojiMosaicApp {
             ctx.strokeStyle = "black";
             ctx.beginPath();
             for (let i = 0; i <= this.columns; i++) {
-                ctx.moveTo(i * this.box_width - 1, 0);
-                ctx.lineTo(i * this.box_width - 1, this.height);
-                ctx.moveTo(i * this.box_width, 0);
-                ctx.lineTo(i * this.box_width, this.height);
+                ctx.moveTo(this.x0 + i * this.box_width - 1, 0);
+                ctx.lineTo(this.x0 + i * this.box_width - 1, this.height);
+                ctx.moveTo(this.x0 + i * this.box_width, 0);
+                ctx.lineTo(this.x0 + i * this.box_width, this.height);
             }
             for (let i = 0; i <= this.rows; i++) {
-                ctx.moveTo(0, i * this.box_height - 1);
-                ctx.lineTo(this.width, i * this.box_height - 1);
-                ctx.moveTo(0, i * this.box_height);
-                ctx.lineTo(this.width, i * this.box_height);
+                ctx.moveTo(0, this.y0 + i * this.box_height - 1);
+                ctx.lineTo(this.width, this.y0 + i * this.box_height - 1);
+                ctx.moveTo(0, this.y0 + i * this.box_height);
+                ctx.lineTo(this.width, this.y0 + i * this.box_height);
             }
             ctx.stroke();
         }
@@ -679,8 +709,8 @@ class EmojiMosaicApp {
                     ctx.fillText(
                         //String.fromCodePoint(this.emoji_list[(y * this.columns + x) % this.emoji_list.length], 0xfe0f),
                         String.fromCodePoint(0x1f60e),
-                        (x + 0.5) * this.box_width + this.horizontal_offset,
-                        (y + 0.5) * this.box_height + this.vertical_offset
+                        this.x0 + (x + 0.5) * this.box_width + this.horizontal_offset,
+                        this.y0 + (y + 0.5) * this.box_height + this.vertical_offset
                     );
                 }
             }
@@ -690,8 +720,8 @@ class EmojiMosaicApp {
                 for (let x = 0; x < this.columns; x++) {
                     ctx.fillText(
                         String.fromCodePoint(this.best_emojis[y][x][0], 0xfe0f),
-                        (x + 0.5) * this.box_width + this.horizontal_offset,
-                        (y + 0.5) * this.box_height + this.vertical_offset
+                        this.x0 + (x + 0.5) * this.box_width + this.horizontal_offset,
+                        this.y0 + (y + 0.5) * this.box_height + this.vertical_offset
                     );
                 }
             }
@@ -702,8 +732,8 @@ class EmojiMosaicApp {
         ctx.strokeStyle = "#9999FF";
         ctx.lineWidth = 2;
         ctx.strokeRect(
-            this.highlight_x * this.box_width,
-            this.highlight_y * this.box_height,
+            this.x0 + this.highlight_x * this.box_width,
+            this.y0 + this.highlight_y * this.box_height,
             this.box_width, this.box_height
         );
     }
@@ -863,7 +893,7 @@ class EmojiMosaicApp {
     }
 }
 
-const app = new EmojiMosaicApp(image_ctx, top_ctx, COMPARISON_SIZE, 25, 25, 20, "#ffffff", 0, 0);
+const app = new EmojiMosaicApp(image_ctx, top_ctx, COMPARISON_SIZE, 25, 25, 20);
 
 const pixel_count_target = 250000;
 
@@ -944,6 +974,9 @@ document.getElementById("emoji_opacity").addEventListener("input", function (e) 
     const v = parseInt(e.target.value);
     emoji_opacity_text.textContent = v;
     app.set_emoji_opacity(v / 100);
+});
+document.getElementById("center_grid").addEventListener("change", function (e) {
+    app.set_grid_centering(e.target.checked);
 });
 
 // set up compare function selection
@@ -1104,8 +1137,8 @@ top_canvas.addEventListener("pointerdown", function (e) {
     const canvas_bounds = top_canvas.getBoundingClientRect();
     const x = Math.round(e.clientX - canvas_bounds.left);
     const y = Math.round(e.clientY - canvas_bounds.top);
-    const row = Math.floor(y / app.box_height);
-    const column = Math.floor(x / app.box_width);
+    const row = Math.floor((y - app.y0) / app.box_height);
+    const column = Math.floor((x - app.x0) / app.box_width);
     // stop if clicked box is not valid
     if (row < 0 || column < 0 || row >= app.rows || column >= app.columns ||
        (app.state == 1 && (row > app.running_y || (row == app.running_y && column >= app.running_x)))
