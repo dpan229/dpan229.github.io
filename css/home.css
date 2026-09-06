@@ -17,10 +17,10 @@ body {
     font-weight: bold;
     color: white;
     text-shadow:  
-        -5px 5px 0px black, 
-        -5px -5px 0px black,
-        5px 5px 0px black,
-        5px -5px 0px black;
+        -6px 6px 0px black, 
+        -6px -6px 0px black,
+        6px 6px 0px black,
+        6px -6px 0px black;
     cursor: pointer;
     overflow: hidden;
 }

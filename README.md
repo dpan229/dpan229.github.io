@@ -58,3 +58,9 @@ This app offers a customizable simulation of a turmite.
 The turmite's ruleset can be freely edited, resulting in a wide range of possible behaviors.
 
 There are two main types of turmites: relative turmites, which have an internal orientation and whose actions are relative to this orientation, and absolute termites, whose actions move them in absolute directions. Currently, only relative actions are implemented.
+
+## [Emoji Mosaic](https://dpan229.github.io/emojimosaic)
+
+This app takes an image generates a grid of emojis that approximates it as closely as possible. It works best with brightly colored, high contrast images.
+
+Each emoji is rendered as a small image for comparisons; the spacial distribution of colors within each one is taken into account when finding the best fit. The grid size is configurable and the exact positioning of the emojis within the grid cells can be adjusted.
