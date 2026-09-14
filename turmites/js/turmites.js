@@ -17,7 +17,7 @@ const GROUND_COLORS = [
     "#FFFFFF", // 1: white
     "#00BBFF", // 2: light blue
     "#BB0000", // 3: red
-    "#00BB00", // 4: green
+    "#00AA00", // 4: green
     "#0000FF", // 5: blue
     "#DD7700", // 6: orange
     "#DDDD00", // 7: yellow
@@ -555,20 +555,11 @@ let target_y0 = 115.5;
 world.quantize_view_params(target_scale, target_x0, target_y0);
 
 // set up click and drag and touchscreen controls
-const pointers_down = new Map();
-const pointers_hovering = new Map();
-/**
- * Returns an arbitrary value from the given map that is not associated with
- * the given key.
- * If there are no such values, returns null.
- * @param {Map} map 
- * @param {*} exclude_key 
- * @returns 
- */
-function get_other_value(map, exclude_key) {
-    for (const [k, v] of map.entries()) {
-        if (k != exclude_key) {
-            return v;
+const active_pointers = new Map();
+function get_secondary_pointer(primary_pointer_id) {
+    for (const [pointer_id, pointer_props] of active_pointers.entries()) {
+        if (pointer_id != primary_pointer_id && pointer_props.down) {
+            return pointer_props;
         }
     }
     return null;
@@ -583,108 +574,127 @@ function clip_target_position() {
 
 canvas.addEventListener("pointerdown", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
+    const x = e.clientX - canvas_bounds.left;
+    const y = e.clientY - canvas_bounds.top;
 
-    pointers_down.set(e.pointerId, {
-        x: e.clientX - canvas_bounds.left,
-        y: e.clientY - canvas_bounds.top,
-    });
+    if (active_pointers.has(e.pointerId)) {
+        const props = active_pointers.get(e.pointerId);
+        props.x = x;
+        props.y = y;
+        props.down = true;
+    } else {
+        active_pointers.set(e.pointerId, {
+            x: x,
+            y: y,
+            down: true
+        });
+    }
+    canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointerup", function (e) {
-    pointers_down.delete(e.pointerId);
+    canvas.releasePointerCapture(e.pointerId);
+    active_pointers.delete(e.pointerId);
 });
 canvas.addEventListener("pointercancel", function (e) {
-    pointers_down.delete(e.pointerId);
+    canvas.releasePointerCapture(e.pointerId);
+    active_pointers.delete(e.pointerId);
 });
 
 canvas.addEventListener("pointermove", function (e) {
     const canvas_bounds = canvas.getBoundingClientRect();
     const new_x = e.clientX - canvas_bounds.left;
     const new_y = e.clientY - canvas_bounds.top;
-    if (pointers_down.has(e.pointerId)) {
-        const pointer_props = pointers_down.get(e.pointerId);
+    if (active_pointers.has(e.pointerId)) {
+        const pointer_props = active_pointers.get(e.pointerId);
         const old_x = pointer_props.x;
         const old_y = pointer_props.y;
-
-        // exit if pointer hasn't actually moved
-        if (new_x == old_x && new_y == old_y) {
-            return;
-        }
-
-        const pointer_count = pointers_down.size;
-        if (pointer_count > 1) {
-            // multiple pointers down: pinch zoom
-            const secondary_pointer = get_other_value(pointers_down, e.pointerId);
-
-            const old_p_to_p_x = old_x - secondary_pointer.x;
-            const old_p_to_p_y = old_y - secondary_pointer.y;
-            const new_p_to_p_x = new_x - secondary_pointer.x;
-            const new_p_to_p_y = new_y - secondary_pointer.y;
-
-            const old_distance = Math.sqrt(
-                old_p_to_p_x**2 + old_p_to_p_y**2
-            );
-            const new_distance = Math.sqrt(
-                new_p_to_p_x**2 + new_p_to_p_y**2
-            );
-            const new_scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, 
-                target_scale * new_distance / old_distance
-            ));
-            target_x0 += secondary_pointer.x * (1/Math.round(target_scale) - 1/Math.round(new_scale));
-            target_y0 += secondary_pointer.y * (1/Math.round(target_scale) - 1/Math.round(new_scale));
-
-            // pan the view
-            // factor = sine of angle between vector from secondary pointer to old position
-            // and vector from old position to new position
-            const dx = new_x - old_x;
-            const dy = new_y - old_y;
-            const factor = Math.sqrt(
-                1 - (
-                    old_p_to_p_x * dx + old_p_to_p_y * dy
-                )**2 / (
-                    (old_p_to_p_x**2 + old_p_to_p_y**2) * (dx**2 + dy**2)
-                )
-            );
-            target_x0 -= factor * dx / target_scale / pointer_count;
-            target_y0 -= factor * dy / target_scale / pointer_count;
-            
-            target_scale = new_scale;
-        } else {
-            // dragging: pan the view
-            target_x0 += (old_x - new_x) / target_scale;
-            target_y0 += (old_y - new_y) / target_scale;
-        }
-
-        clip_target_position();
-        world.quantize_view_params(
-            target_scale,
-            target_x0,
-            target_y0
-        );
-
         pointer_props.x = new_x;
         pointer_props.y = new_y;
+
+        if (pointer_props.down) {
+            // exit if pointer hasn't actually moved
+            if (new_x == old_x && new_y == old_y) {
+                return;
+            }
+
+            const secondary_pointer = get_secondary_pointer(e.pointerId);
+            if (secondary_pointer !== null) {
+                // multiple pointers down: pinch zoom
+                let pointer_count = 0;
+                for (const [id, props] of active_pointers.entries()) {
+                    if (props.down) {
+                        pointer_count++;
+                    }
+                }
+
+                const old_p_to_p_x = old_x - secondary_pointer.x;
+                const old_p_to_p_y = old_y - secondary_pointer.y;
+                const new_p_to_p_x = new_x - secondary_pointer.x;
+                const new_p_to_p_y = new_y - secondary_pointer.y;
+
+                const old_distance = Math.sqrt(
+                    old_p_to_p_x**2 + old_p_to_p_y**2
+                );
+                const new_distance = Math.sqrt(
+                    new_p_to_p_x**2 + new_p_to_p_y**2
+                );
+                const new_scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, 
+                    target_scale * new_distance / old_distance
+                ));
+                target_x0 += secondary_pointer.x * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+                target_y0 += secondary_pointer.y * (1/Math.round(target_scale) - 1/Math.round(new_scale));
+
+                // pan the view
+                // factor = sine of angle between vector from secondary pointer to old position
+                // and vector from old position to new position
+                const dx = new_x - old_x;
+                const dy = new_y - old_y;
+                const factor = Math.sqrt(
+                    1 - (
+                        old_p_to_p_x * dx + old_p_to_p_y * dy
+                    )**2 / (
+                        (old_p_to_p_x**2 + old_p_to_p_y**2) * (dx**2 + dy**2)
+                    )
+                );
+                target_x0 -= factor * dx / target_scale / pointer_count;
+                target_y0 -= factor * dy / target_scale / pointer_count;
+                
+                target_scale = new_scale;
+            } else {
+                // dragging: pan the view
+                target_x0 += (old_x - new_x) / target_scale;
+                target_y0 += (old_y - new_y) / target_scale;
+            }
+
+            clip_target_position();
+            world.quantize_view_params(
+                target_scale,
+                target_x0,
+                target_y0
+            );
+        }
     } else {
-        // pointer is moving but not down: track as hovering
-        pointers_hovering.set(e.pointerId, {
+        // new hovering pointer
+        active_pointers.set(e.pointerId, {
             x: new_x,
-            y: new_y
+            y: new_y,
+            down: false
         });
     }
 });
 
-// Clear pointers on mouse leave to prevent mouse from staying down
-// if you let go of mouse while off the canvas.
-// Leaving canvas with touchscreen doesn't trigger this
-canvas.addEventListener("mouseleave", function (e) {
-    pointers_down.clear();
-    pointers_hovering.clear();
-});
-
 // set up zooming with mouse wheel
+function get_wheel_pointer_props() {
+    // return an arbitrary active pointer
+    for (const [pointer_id, pointer_props] of active_pointers) {
+        return pointer_props;
+    }
+    return null;
+}
 canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
 
-    const pointer_props = get_other_value(pointers_down, null) ?? get_other_value(pointers_hovering, null);
+    const pointer_props = get_wheel_pointer_props();
     if (pointer_props === null) {
         return;
     }
