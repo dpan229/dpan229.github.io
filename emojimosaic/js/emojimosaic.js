@@ -11,7 +11,7 @@ const grid_settings_container = document.getElementById("grid_settings");
 const output_container = document.getElementById("output_container");
 const output_textbox = document.getElementById("output_text");
 
-// size to reduce emoji images and image boxes to, in pixels
+// size to reduce emoji images and image cells to, in pixels
 const COMPARISON_SIZE = 15;
 
 function unpack_ranges(range_list) {
@@ -211,8 +211,8 @@ function redmean_distance(r1, g1, b1, r2, g2, b2) {
 
 const D = redmean_distance(0, 0, 0, 255, 255, 255) / 2;
 /**
- * This is an extension of the redmean color distance to include
- * transparency. The distance between every fully opaque color
+ * This is an extension of the redmean color distance formula to 
+ * include transparency. The distance between every fully opaque color
  * and full transparency is equal to half of the distance between
  * black and white. This metric satisfies the triangle inequality.
  * Inputs are the components of 2 rgba colors 
@@ -221,9 +221,11 @@ const D = redmean_distance(0, 0, 0, 255, 255, 255) / 2;
  * @param {Number} r1 
  * @param {Number} g1 
  * @param {Number} b1 
+ * @param {Number} a1 
  * @param {Number} r2 
  * @param {Number} g2 
- * @param {Number} b2 
+ * @param {Number} b2
+ * @param {Number} a2 
  * @returns 
  */
 function redmean_distance_alpha(r1, g1, b1, a1, r2, g2, b2, a2) {
@@ -578,8 +580,6 @@ class EmojiMosaicApp {
         this.center_grid = center_grid;
         this.update_grid_origin();
         this.box_data.clear();
-        this.emoji_data.clear();
-        this.vp_tree = null;
         this.draw();
     }
 
