@@ -1,0 +1,44 @@
+<html>
+    <head>
+        <title>Unix Time Words</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Unix Time Words</span>
+        <span class="info">Drag to pan, use the scroll wheel or pinch to zoom</span>
+        <canvas id="unix_time_canvas" width="1000" height="500"></canvas>
+        <div class="control_container">
+            <div class="control_group">
+                <div class="control">
+                    <button id="live_button">Follow present</button>
+                </div>
+            </div>
+            <div class="control_group">
+                <div class="control">
+                    <button id="prev_button">Prev word</button>
+                </div>
+                <div class="control">
+                    <button id="next_button">Next word</button>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Settings</span>
+            <span class="container_subheading">Time zone</span>
+            <div class="control_group">
+                <div class="control">
+                    <input type="radio" id="local_time_radio" name="timezone" value="local" checked>
+                    <label for="local_time_radio">Local time</label>
+                </div>
+                <div class="control">
+                    <input type="radio" id="utc_radio" name="timezone" value="utc">
+                    <label for="utc_radio">UTC</label>
+                </div>
+            </div>
+        </div>
+        <script src="/js/include_html.js"></script>
+        <script src="js/unixwords.js"></script>
+    </body>
+</html>
