@@ -329,7 +329,7 @@ class TimelineApp {
         ctx.fillStyle = "#000000";
         ctx.textBaseline = "bottom";
         ctx.font = "18px monospace";
-        const max_height = Math.floor((2 * this.height / 3 - 135) / 14) - 1;
+        const max_height = Math.max(0, Math.floor((2 * this.height / 3 - 135) / 14) - 1);
         const heights = Array(max_height).fill(0); // minimum allowed next x position for each height
         for (const mark of this.get_marks_in_range(base_time, right_time)) {
             const x = this.get_screen_x(mark.date);
