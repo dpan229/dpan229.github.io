@@ -67,4 +67,4 @@ Each emoji is rendered as a small image for comparisons; the spacial distributio
 
 ## [Unix Time Words](https://dpan229.github.io/unixwords)
 
-The Unix timestamp counts the number of seconds that have passed since midnight on January 1, 1970, UTC. If we write the Unix timestamp in base 36, using the digits 0 to 9 followed by A to Z, when does it form complete English words? This app presents an interactive timeline that explores the answer to that question.
+The Unix timestamp counts the number of seconds that have passed since midnight on January 1, 1970, UTC. If we write the Unix timestamp in base 36, using the digits 0 to 9 followed by A to Z, when does it form complete English words? This is an interactive timeline exploring the answer to that question.
