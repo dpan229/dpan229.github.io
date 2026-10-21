@@ -76,6 +76,10 @@ th, td {
     padding: 3px;
 }
 
+#compare_preview_canvas {
+    border: 1px solid black;
+}
+
 #click_info {
     display: none;
 }
@@ -108,7 +112,7 @@ th, td {
 #output_text {
     width: fit-content;
     margin: 0 auto;
-    font-size: 20px;
+    font-size: 14px;
     font-family: monospace;
-    line-height: 23px;
+    line-height: 17px;
 }

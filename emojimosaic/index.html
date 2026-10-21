@@ -30,6 +30,7 @@
             </div>
             <span class="container_heading">Grid settings</span>
             <div class="control_group">
+                <div class="control">
                 <table>
                     <tr>
                         <td class="wide_cell">
@@ -64,6 +65,14 @@
                         </td>
                     </tr>
                 </table>
+                </div>
+                <div class="control">
+                    <canvas id="compare_preview_canvas" width="45" height="45"></canvas>
+                    <br>
+                    Comparison image
+                    <br>
+                    preview
+                </div>
             </div>
             <div class="control_group">
                 <div class="control">
@@ -112,6 +121,10 @@
                     <input type="checkbox" id="travel_checkbox" class="category_checkbox" data-category="TRAVELSPORTS" checked>
                     <label for="travel_checkbox">Travel & Sports</label>
                 </div>
+                <div class="control">
+                    <input type="checkbox" id="symbols_checkbox" class="category_checkbox" data-category="SYMBOLS" checked>
+                    <label for="symbols_checkbox">Symbols</label>
+                </div>
                 <!-- <div class="control">
                     <input type="checkbox" id="space_checkbox" class="category_checkbox" data-category="SPACE" checked>
                     <label for="space_checkbox">Allow empty space</label>
@@ -138,8 +151,9 @@
         </div>
 
         <div class="control_container" id="output_container">
+            <span class="container_heading">Click the image to see best fit emojis.</span>
             <span class="container_heading">Text Version:</span>
-            <div id="output_text"></div>
+            <pre id="output_text"></pre>
         </div>
         <script src="/js/include_html.js"></script>
         <script src="js/emojimosaic.js"></script>

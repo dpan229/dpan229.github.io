@@ -11,6 +11,8 @@ const grid_settings_container = document.getElementById("grid_settings");
 const output_container = document.getElementById("output_container");
 const output_textbox = document.getElementById("output_text");
 
+const preview_canvas = document.getElementById("compare_preview_canvas");
+
 // size to reduce emoji images and image cells to, in pixels
 const COMPARISON_SIZE = 15;
 
@@ -76,8 +78,8 @@ const EMOJI_CATEGORIES = {
         [0x1fa70, 0x1fa74],           // ballet shoes - sandal
         [0x1fac0, 0x1fac6],           // heart - fingerprint
         [0x1fae0, 0x1fae6],           // melting face - biting lip
-        [0x1fae8, 0x1faea],           // shaking face - distorted face
-        [0x1faf0, 0x1faf8]            // hand making heart with fingers - hand pushing right
+        [0x1fae8, 0x1faeb],           // shaking face - cracking face
+        [0x1faf0, 0x1fafa]            // hand making heart with fingers - rightward thumb
     ])),
     NATURE: remove_nonrenderable(unpack_ranges([
         [0x2600, 0x2604],             // sun - comet
@@ -91,7 +93,7 @@ const EMOJI_CATEGORIES = {
         [0x1f648, 0x1f64a],           // monkeys
         [0x1f980, 0x1f9ae],           // crab - guide dog
         [0x1fab0, 0x1fabf],           // fly - goose
-        [0x1facd, 0x1facf]            // orca - donkey
+        [0x1fac8, 0x1facf]            // hairy creature - donkey
     ])),
     FOOD: remove_nonrenderable(unpack_ranges([
         [0x2615],                     // coffee
@@ -101,7 +103,7 @@ const EMOJI_CATEGORIES = {
         [0x1f345, 0x1f37f],           // tomato - popcorn
         [0x1f950, 0x1f96f],           // croissant - bagel
         [0x1f9c0, 0x1f9cb],           // cheese - bubble tea
-        [0x1fad0, 0x1fadc]            // blueberries - root vegetable
+        [0x1fad0, 0x1fadd]            // blueberries - pickle
     ])),
     OBJECTS: remove_nonrenderable(unpack_ranges([
         [0x231a, 0x231b],             // watch, hourglass
@@ -145,7 +147,7 @@ const EMOJI_CATEGORIES = {
         [0x1f5dc, 0x1f5de],           // vice - newspaper
         [0x1f5e1], [0x1f5f3],         // dagger, ballot box
         [0x1f6aa], [0x1f6ac],         // door, cigarette
-        [0x1f6bd], [0x1f6bf, 0x1f6c1],// shower - bathtub
+        [0x1f6bd], [0x1f6bf, 0x1f6c1],// toilet, shower - bathtub
         [0x1f6cb, 0x1f6cf],           // sofa - bed
         [0x1f6dd, 0x1f6e2],           // slide - oil drum
         [0x1f93f, 0x1f944],           // diving mask - spoon
@@ -177,9 +179,67 @@ const EMOJI_CATEGORIES = {
         [0x1f938, 0x1f93e],           // cartwheel - handball
         [0x1f945, 0x1f94f]            // goal net - frisbee
     ])),
-    SHAPES: unpack_ranges([
-        [0x1f7e0, 0x1f7eb]
-    ]),
+    SYMBOLS: remove_nonrenderable(unpack_ranges([
+        [0xa9], [0xae],               // copyright, registered trademark
+        [0x203c], [0x2049], [0x2122], // !!, !?, tm
+        [0x2139], [0x2194, 0x2199],   // information, left right arrow - southwest arrow
+        [0x21a9, 0x21aa],             // left arrow w/ hook, right arrow w/ hook
+        [0x23cf], [0x23e9, 0x23ef],   // eject, fast forward - play/pause
+        [0x23f8, 0x23fa],             // pause, record
+        [0x24c2], [0x25aa, 0x25ab],   // circled M, small b/w squares
+        [0x25b6], [0x25c0],           // right pointing triagle, left pointing triangle
+        [0x25fb, 0x25fe],             // white medium square - black med. small square
+        [0x2611],                     // check mark
+        [0x2622, 0x2623],             // radiation, biohazard
+        [0x2626], [0x262a],           // orthodox cross, star and crescent
+        [0x262e, 0x262f], [0x2638],   // peace sign, yin yang, wheel of dharma
+        [0x2648, 0x2653],             // aries - pisces
+        [0x2660], [0x2663],           // spade suit, club suit
+        [0x2665, 0x2666],             // heart suit, diamond suit
+        [0x2668], [0x267b],           // onsen, recycling
+        [0x267e, 0x267f],             // permanent paper, wheelchair
+        [0x269b, 0x269c],             // atom, fleur-de-lis
+        [0x26a0, 0x26a1],             // warning, high voltage
+        [0x26a7], [0x26aa, 0x26ab],   // transgender, white circle, black circle
+        [0x26ce], [0x26d4],           // ophiucus, do not enter
+        [0x2705], [0x2714], [0x2716], // check mark, check mark, X
+        [0x271d], [0x2721], [0x2728], // latin cross, star of david, sparkles
+        [0x2733, 0x2734], [0x2747],   // boxed stars
+        [0x274c], [0x274e],           // more Xs
+        [0x2753, 0x2755], [0x2757],   // ?, ?, !, !
+        [0x2763, 0x2764],             // heart exclamation mark, heart
+        [0x2795, 0x2797],             // plus sign - division sign
+        [0x27a1], [0x27b0], [0x27bf], // right arrow, curly loops
+        [0x2934, 0x2935],             // more arrows
+        [0x2b05, 0x2b07],             // more arrows
+        [0x2b1b, 0x2b1c], [0x2b50],   // more squares, star
+        [0x2b55], [0x3030], [0x303d], // circle, wavy line, part alteration mark
+        [0x3297], [0x3299],           // circled ideographs
+        [0x1f170, 0x1f171],           // squared A, squared B
+        [0x1f17e, 0x1f17f],           // squared O, squared P
+        [0x1f18e], [0x1f191, 0x1f19a],// squared AB, squared words
+        [0x1f201, 0x1f202], [0x1f21a],// squared ideographs
+        [0x1f22f], [0x1f232, 0x1f23a],// squared ideographs
+        [0x1f250, 0x1f251], [0x1f3a6],// circled ideographs, cinema
+        [0x1f3e7], [0x1f493, 0x1f4a0],// atm, beating heart - diamond shape
+        [0x1f4a2], [0x1f4a4, 0x1f4a9],// anger, sleeping - poo
+        [0x1f4ab, 0x1f4af],           // dizzy - 100 points
+        [0x1f4b1, 0x1f4b2],           // currency exchange, dollar sign
+        [0x1f4f3, 0x1f4f6],           // vibration mode - reception bars
+        [0x1f500, 0x1f50a],           // shuffle - loud volume
+        [0x1f518, 0x1f524],           // radio button, latin letter input
+        [0x1f52f, 0x1f530],           // star with dot, beginner driver
+        [0x1f532, 0x1f53d],           // black square button - down arrow
+        [0x1f549], [0x1f54e],         // om, menorah
+        [0x1f550, 0x1f567],           // clock face 1:00 - clock face 12:30
+        [0x1f5a4],                    // black heart
+        [0x1f5e8], [0x1f5ef],         // speech bubble, shouting bubble
+        [0x1f6ab], [0x1f6ad, 0x1f6b1],// no entry, no smoking - non-potable water
+        [0x1f6b3], [0x1f6b7, 0x1f6bc],// no bicycles, no pedestrians - baby
+        [0x1f6be], [0x1f6c2, 0x1f6c5],// water closet, passport - left luggage
+        [0x1f6d0], [0x1f7e0, 0x1f7eb],// place of worship, orange circle - brown square
+        [0x1f7f0], [0x1f90d, 0x1f90e] // equals sign, white heart, brown heart
+    ])),
     SPACE: [
         0x3000
     ]
@@ -383,19 +443,26 @@ class VPTree {
 }
 
 class EmojiMosaicApp {
-    constructor(image_ctx, top_ctx, compare_size, box_width, box_height, font_size, 
-                center_grid=true, background_color="#ffffff", horizontal_offset=0, 
-                vertical_offset=0) {
+    constructor(image_ctx, top_ctx, preview_canvas, compare_size, box_width, 
+                box_height, font_size, center_grid=true, background_color="#ffffff", 
+                horizontal_offset=0, vertical_offset=0) {
         this.image_ctx = image_ctx;
         this.top_ctx = top_ctx;
         this.width = image_ctx.canvas.width;
         this.height = image_ctx.canvas.height;
         this.compare_size = compare_size;
         this.compare_area = compare_size * compare_size;
+
+        this.preview_canvas = preview_canvas;
+        preview_canvas.width = compare_size * 3;
+        preview_canvas.height = compare_size * 3;
+        this.preview_ctx = preview_canvas.getContext("2d");
+        this.preview_ctx.imageSmoothingEnabled = false;
+
         this.compare_func = this.compare_no_transparency;
 
         // app has 3 states:
-        // state 0 = starting state, waiting to start generating
+        // state 0 = initial state, waiting to start generating
         // state 1 = activiely generating
         // state 2 = finished generating
         this.state = 0;
@@ -403,6 +470,13 @@ class EmojiMosaicApp {
 
         this.emoji_data = new Map();
         this.box_data = new Map();
+
+        // emoji rendering parameters
+        this.font_size = font_size;
+        this.horizontal_offset = horizontal_offset;
+        this.vertical_offset = vertical_offset;
+        this.emoji_data_transparency = false;
+        this.background_color = background_color;
 
         this.emoji_canvas = new OffscreenCanvas(box_width, box_height);
         this.emoji_ctx = this.emoji_canvas.getContext("2d", {
@@ -419,13 +493,6 @@ class EmojiMosaicApp {
 
         this.center_grid = center_grid;
         this.set_box_dimensions(box_width, box_height);
-
-        // emoji rendering parameters
-        this.font_size = font_size;
-        this.horizontal_offset = horizontal_offset;
-        this.vertical_offset = vertical_offset;
-        this.emoji_data_transparency = false;
-        this.background_color = background_color;
 
         // display parameters
         this.emoji_opacity = 0.7;
@@ -478,6 +545,14 @@ class EmojiMosaicApp {
             const data = this.small_emoji_ctx.getImageData(
                 0, 0, this.compare_size, this.compare_size
             ).data;
+
+            // for (let i = 0; i < this.compare_area; i++) {
+            //     const a = Math.floor((data[4*i] + data[4*i+1] + data[4*i+2]) / 3);
+            //     data[4*i] = a;
+            //     data[4*i+1] = a;
+            //     data[4*i+2] = a;
+            // }
+
             this.emoji_data.set(charcode, data);
             return data;
         }
@@ -510,6 +585,19 @@ class EmojiMosaicApp {
             this.box_data.set(id, data);
             return data;
         }
+    }
+
+    /**
+     * Update comparison image preview using current settings
+     */
+    update_emoji_preview() {
+        const emoji_data = this.get_emoji_data(0x1f60e);
+        const emoji_image_data = new ImageData(
+            emoji_data, this.compare_size, this.compare_size
+        );
+        this.small_emoji_ctx.putImageData(emoji_image_data, 0, 0);
+        this.preview_ctx.clearRect(0, 0, 3 * this.compare_size, 3 * this.compare_size);
+        this.preview_ctx.drawImage(this.small_emoji_canvas, 0, 0, 3*this.compare_size, 3*this.compare_size);
     }
 
     get_vp_tree() {
@@ -568,6 +656,7 @@ class EmojiMosaicApp {
         this.box_data.clear();
         this.emoji_data.clear();
         this.vp_tree = null;
+        this.update_emoji_preview();
         this.draw();
     }
 
@@ -601,6 +690,7 @@ class EmojiMosaicApp {
         this.font_size = font_size;
         this.emoji_data.clear();
         this.vp_tree = null;
+        this.update_emoji_preview();
         this.draw();
     }
 
@@ -612,6 +702,7 @@ class EmojiMosaicApp {
         this.horizontal_offset = horizontal_offset;
         this.emoji_data.clear();
         this.vp_tree = null;
+        this.update_emoji_preview();
         this.draw();
     }
 
@@ -623,6 +714,7 @@ class EmojiMosaicApp {
         this.vertical_offset = vertical_offset;
         this.emoji_data.clear();
         this.vp_tree = null;
+        this.update_emoji_preview();
         this.draw();
     }
 
@@ -634,6 +726,7 @@ class EmojiMosaicApp {
         this.background_color = background_color;
         this.emoji_data.clear();
         this.vp_tree = null;
+        this.update_emoji_preview();
         this.draw();
     }
 
@@ -819,10 +912,10 @@ class EmojiMosaicApp {
                 }
             }
         }
-        if (blank_pixels == this.compare_area) {
+        if (blank_pixels >= this.compare_area) {
             return Infinity;
         } else {
-            return total * this.compare_area / (this.compare_area - blank_pixels);
+            return (total * this.compare_area / (this.compare_area - blank_pixels));
         }
     }
 
@@ -893,7 +986,7 @@ class EmojiMosaicApp {
     }
 }
 
-const app = new EmojiMosaicApp(image_ctx, top_ctx, COMPARISON_SIZE, 25, 25, 20);
+const app = new EmojiMosaicApp(image_ctx, top_ctx, preview_canvas, COMPARISON_SIZE, 25, 25, 20);
 
 const pixel_count_target = 250000;
 
