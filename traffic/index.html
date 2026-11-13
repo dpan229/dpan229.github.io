@@ -1,0 +1,111 @@
+<html>
+    <head>
+        <title>Turmites</title>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div id="header_placeholder"></div>
+        <span class="main_header">Traffic</span>
+        <canvas id="main_canvas" width="500" height="500"></canvas>
+        <div class="control_container">
+            <div class="control_group">
+                <div class="control">
+                    <button id="playpause">Pause</button>
+                </div>
+                <div class="control">
+                    <button id="step">Step</button>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="container_heading">Roads</span>
+            <div class="control_group">
+                <div class="control">
+                    <label for="grid_selector">Network type: </label>
+                    <select id="grid_selector">
+                        <option value="square" selected="selected">Square grid</option>
+                        <option value="triangular">Triangular grid</option>
+                        <option value="wheel">Wheel</option>
+                    </select>
+                </div>
+            </div>
+            <div id="square_grid_settings">
+                <div class="control_group">
+                    <div class="control">
+                        <label for="square_rows_slider">Square grid rows: <span id="square_rows_label">6</span></label>
+                        <br>
+                        <input class="long_slider" type="range" min="1" max="18" value="3" id="square_rows_slider">
+                    </div>
+                </div>
+            </div>
+            <div id="triangular_grid_settings">
+                <div class="control_group">
+                    <div class="control">
+                        <label for="triangular_rows_slider">Triangular grid rows: <span id="triangular_rows_label">6</span></label>
+                        <br>
+                        <input class="long_slider" type="range" min="2" max="36" value="6" id="triangular_rows_slider">
+                    </div>
+                </div>
+            </div>
+            <div id="wheel_grid_settings">
+                <div class="control_group">
+                    <div class="control">
+                        <label for="wheel_spokes_slider">Wheel spokes: <span id="wheel_spokes_label">6</span></label>
+                        <br>
+                        <input class="long_slider" type="range" min="1" max="36" value="6" id="wheel_spokes_slider">
+                    </div>
+                </div>
+            </div>
+            <span class="container_subheading">Cars</span>
+            <table class="control_table">
+                <tr>
+                    <td>
+                        <label for="car_num_slider">Number of cars: <span id="car_num_label">100</span></label>
+                    </td>
+                    <td>
+                        <input class="long_slider" type="range" min="1" max="300" value="100" id="car_num_slider">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="car_max_speed_slider">Max speed: <span id="car_max_speed_label">5.0</span>px/frame</label>
+                    </td>
+                    <td>
+                        <input class="long_slider" type="range" min="1" max="200" value="50" id="car_max_speed_slider">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="car_max_accel_slider">Max acceleration: <span id="car_max_accel_label">0.10</span>px/frame<sup>2</sup></label>
+                    </td>
+                    <td>
+                        <input class="long_slider" type="range" min="1" max="200" value="10" id="car_max_accel_slider">
+                    </td>
+                </tr>
+            </table>
+            <div class="control_group">
+                <div class="control">
+                    <button id="reset">Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="control_container">
+            <span class="info">
+                Each car is colored based on its speed, transitioning from red at 0&nbsp;px/frame to green at 2&nbsp;px/frame to cyan at >=&nbsp;10&nbsp;px/frame.
+                The current average speed among all cars and current total length of all cars' planned paths are shown in the bottom right.
+                <br><br>
+                Click a car to select it. Additional information is shown when a car is selected:
+                <ul>
+                    <li>The selected car is marked with a large black circle.</li>
+                    <li>The car's planned path is highlighted in green.</li>
+                    <li>Detected obstacles are marked with blue circles.</li>
+                    <li>A cyan X marks the earliest point along the car's planned path that it could stop at, given its current speed and maximum acceleration.</li>
+                    <li>The car's position on its current lane, current speed and max speed are shown in the bottom left. A simple graphical spedometer is shown in the bottom center.</li>
+                </ul>
+            </span>
+        </div>
+        <script src="/js/include_html.js"></script>
+        <script src="js/traffic.js"></script>
+    </body>
+</html>

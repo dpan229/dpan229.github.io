@@ -1,0 +1,70 @@
+#main_canvas {
+    display: block;
+    margin: 0 auto;
+    border: 1px solid black;
+    touch-action: none;
+}
+
+.control_container {
+    width: 500px;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.25);
+    margin: 15px auto;
+    padding: 0 5px 5px 5px;
+}
+
+.container_heading {
+    font-weight: bold;
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.container_subheading {
+    font-weight: bold;
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.info {
+    font-family: monospace;
+    display: block;
+    width: fit-content;
+    margin: 5px auto;
+}
+
+.control_group {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.spaced_control_group {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+    margin-bottom: 16px;
+}
+
+.control {
+    display: inline;
+    margin: 0 8px;
+    text-align: center;
+}
+
+button {
+    width: 100px;
+    height: 40px;
+}
+
+.long_slider {
+    width: 200px;
+}
+
+.control_table {
+    table-layout: fixed;
+    text-align: right;
+    border-collapse: collapse;
+    margin: 0 auto;
+}
