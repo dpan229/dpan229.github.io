@@ -36,14 +36,14 @@ The app allows you to place trails by clicking in the field and has controls for
 
 ## [Vaneck Sequence Explorer](https://dpan229.github.io/vaneck/)
 
-This is an interactive app for exploring the [Van Eck Sequence](https://oeis.org/A181391). The sequence begins with 0, then continues as follows: each number in the sequence is equal to the distance between the previous number in the sequence and the last occurance of that number, or 0 if this is the first time that number has appeared. Thus, the second number is 0 (the first element was the first occurance of 0), the third number is 1 (the last time 0 appeared was 1 step earlier), the fourth number is 0 (that was the first appearance of 1), the fifth number is 2 (the last time 0 appeared was 2 steps earlier), and so on.
+This interactive app lets you explore the [Van Eck Sequence](https://oeis.org/A181391). The sequence begins with 0, then continues as follows: each number in the sequence is equal to the distance between the previous number in the sequence and the last occurance of that number, or 0 if this is the first time that number has appeared. Thus, the second number is 0 (the first element was the first occurance of 0), the third number is 1 (the last time 0 appeared was 1 step earlier), the fourth number is 0 (that was the first appearance of 1), the fifth number is 2 (the last time 0 appeared was 2 steps earlier), and so on.
 
 As you pan and zoom, elements of the sequence are automatically generated to fill the view. 
 Hover over an element to see the two elements its value is referencing, and click on it to keep them highlighted.
 
 ## [Image Sorter](https://dpan229.github.io/imagesorter/)
 
-This is an app that "sorts" the pixels of an image in 2D. 
+This app "sorts" the pixels of an image in 2D. 
 Each pixel is given a target position based on its color, and every frame a subset of the pixels attempt to swap positions with a random neighbor.
 The pixels will only perform the swap if doing so would reduce the total loss: the sum of the square of each pixel's distance from its target position. 
 
@@ -68,3 +68,8 @@ Each emoji is rendered as a small image for comparisons; the spacial distributio
 ## [Unix Time Words](https://dpan229.github.io/unixwords)
 
 The Unix timestamp counts the number of seconds that have passed since midnight on January 1, 1970, UTC. If we write the Unix timestamp in base 36, using the digits 0 to 9 followed by A to Z, when does it form complete English words? This is an interactive timeline exploring the answer to that question.
+
+## [Traffic](https://dpan229.github.io/traffic)
+
+This is a simulation of a group of independently moving cars on a network of one-way roads.
+The cars detect incoming obstacles and slow down to avoid collisions.
