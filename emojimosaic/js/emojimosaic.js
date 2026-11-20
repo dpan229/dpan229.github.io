@@ -1122,6 +1122,8 @@ for (const checkbox of category_checkboxes) {
 }
 set_categories();
 
+let highlight_active = false;
+
 // set up go button
 document.getElementById("go_button").addEventListener("click", function (e) {
     if (app.state == 0) {
@@ -1141,6 +1143,7 @@ document.getElementById("go_button").addEventListener("click", function (e) {
         output_container.style.display = "none";
         output_textbox.innerText = "";
         go_button.textContent = "Go";
+        highlight_active = false;
     }
 });
 
@@ -1153,6 +1156,7 @@ click_info_ctx.imageSmoothingEnabled = false;
 const table_container = document.getElementById("table_container");
 function select_box(row, column) {
     click_info_container.style.display = "block";
+    highlight_active = true;
 
     app.set_highlight(column, row);
     
@@ -1243,8 +1247,44 @@ top_canvas.addEventListener("pointerdown", function (e) {
         // clicked cell is already highlighted, unhighlight it
         app.disable_highlight();
         click_info_container.style.display = "none";
+        highlight_active = false;
     } else {
         select_box(row, column);
+    }
+});
+
+// set up keyboard navigation between grid cells
+document.addEventListener("keydown", function (e) {
+    if (app.state == 2 && highlight_active) {
+        let x = app.highlight_x;
+        let y = app.highlight_y;
+
+        switch (e.key) {
+            case "w":
+            case "ArrowUp":
+                e.preventDefault();
+                y = Math.max(0, y - 1);
+                break;
+            case "a":
+            case "ArrowLeft":
+                e.preventDefault();
+                x = Math.max(0, x - 1);
+                break;
+            case "s":
+            case "ArrowDown":
+                e.preventDefault();
+                y = Math.min(app.rows - 1, y + 1);
+                break;
+            case "d":
+            case "ArrowRight":
+                e.preventDefault();
+                x = Math.min(app.columns - 1, x + 1);
+                break;
+            default:
+                return;
+        }
+
+        select_box(y, x);
     }
 });
 
